@@ -6,8 +6,9 @@ const EARTH_RADIUS = 2;
 const EARTH_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
 const EARTH_BUMP    = 'https://unpkg.com/three-globe/example/img/earth-topology.png';
 
-// Zoom threshold below which big cities become visible (camera.position.z)
-const CITY_ZOOM_THRESHOLD = 4.2;
+// camera.position.z thresholds (smaller = more zoomed in, range 2.5–9)
+const CAPITAL_SHOW_Z  = 4.5; // capitals appear below this zoom level
+const CITY_SHOW_Z     = 3.5; // big non-capital cities appear below this
 
 // Convert lat/lon to 3D point on sphere
 function latLonToVec3(lat, lon, radius) {
@@ -390,7 +391,10 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
 
 // ── CityLabels overlay ────────────────────────────────────────────────────────
 function CityLabels({ globeRef, cameraRef, mountRef, selectedLocation, cityLabels, layerMode }) {
-  // Single persistent RAF loop – queries DOM labels every frame
+  const geoContainerRef     = useRef(null);
+  const weatherContainerRef = useRef(null);
+
+  // Single persistent RAF loop – uses container refs, never querySelectorAll
   useEffect(() => {
     let frameId;
     function update() {
@@ -401,34 +405,45 @@ function CityLabels({ globeRef, cameraRef, mountRef, selectedLocation, cityLabel
       if (!globe || !camera || !mount) return;
 
       const cameraZ = camera.position.z;
-      const labels  = mount.querySelectorAll('.city-label');
-      if (!labels.length) return;
 
-      labels.forEach(el => {
-        // Hide big cities when not zoomed in enough (performance + clarity)
-        if (el.dataset.bigcity === 'true' && cameraZ > CITY_ZOOM_THRESHOLD) {
-          el.style.opacity = '0';
-          return;
+      // ── Geo labels: hide entire container when zoomed out ─────────────────
+      const geoContainer = geoContainerRef.current;
+      if (geoContainer) {
+        if (cameraZ >= CAPITAL_SHOW_Z) {
+          // Too far out – single op hides all geo labels, skip all 3D math
+          geoContainer.style.visibility = 'hidden';
+        } else {
+          geoContainer.style.visibility = 'visible';
+
+          // getBoundingClientRect once per frame (not per label)
+          const rect = mount.getBoundingClientRect();
+
+          const els = geoContainer.children;
+          for (let i = 0; i < els.length; i++) {
+            const el = els[i];
+
+            // Big non-capital cities: additional zoom gate
+            if (el.dataset.bigcity === 'true' && cameraZ >= CITY_SHOW_Z) {
+              el.style.opacity = '0';
+              continue;
+            }
+
+            positionLabel(el, globe, camera, rect);
+          }
         }
+      }
 
-        const lat = parseFloat(el.dataset.lat);
-        const lon = parseFloat(el.dataset.lon);
-        const pos      = latLonToVec3(lat, lon, EARTH_RADIUS * 1.06);
-        const worldPos = pos.clone().applyMatrix4(globe.matrixWorld);
-
-        // Back-face cull: hide labels on the far side of the globe
-        const camDir       = worldPos.clone().sub(camera.position).normalize();
-        const surfaceNormal = worldPos.clone().normalize();
-        if (surfaceNormal.dot(camDir) > 0) { el.style.opacity = '0'; return; }
-
-        // Project to 2-D screen position
-        const projected = worldPos.clone().project(camera);
+      // ── Weather labels: always process (max ~6 elements) ─────────────────
+      const weatherContainer = weatherContainerRef.current;
+      if (weatherContainer && weatherContainer.children.length) {
         const rect = mount.getBoundingClientRect();
-        el.style.left    = `${(projected.x *  0.5 + 0.5) * rect.width}px`;
-        el.style.top     = `${(1 - (projected.y * 0.5 + 0.5)) * rect.height}px`;
-        el.style.opacity = '1';
-      });
+        const els  = weatherContainer.children;
+        for (let i = 0; i < els.length; i++) {
+          positionLabel(els[i], globe, camera, rect);
+        }
+      }
     }
+
     update();
     return () => cancelAnimationFrame(frameId);
   }, []); // runs once; loop reads DOM dynamically each frame
@@ -447,42 +462,63 @@ function CityLabels({ globeRef, cameraRef, mountRef, selectedLocation, cityLabel
 
   return (
     <>
-      {/* Geo overlay labels */}
-      {geoLabels && geoLabels.map((c, i) => {
-        const isBigCity = layerMode === 3 && i >= CAPITALS.length;
-        return (
-          <div
-            key={`geo-${c.city}-${i}`}
-            className="city-label city-label-geo"
-            data-lat={c.lat}
-            data-lon={c.lon}
-            data-bigcity={isBigCity ? 'true' : 'false'}
-            style={{ opacity: 0 }}
-          >
-            <span className="city-label-dot city-label-dot-geo" />
-            <span className="city-label-text">{c.city}</span>
-          </div>
-        );
-      })}
+      {/* Geo overlay labels – in a container so they can be hidden in bulk */}
+      <div ref={geoContainerRef} style={{ visibility: 'hidden' }}>
+        {geoLabels && geoLabels.map((c, i) => {
+          const isBigCity = layerMode === 3 && i >= CAPITALS.length;
+          return (
+            <div
+              key={`geo-${c.city}-${i}`}
+              className="city-label city-label-geo"
+              data-lat={c.lat}
+              data-lon={c.lon}
+              data-bigcity={isBigCity ? 'true' : 'false'}
+              style={{ opacity: 0 }}
+            >
+              <span className="city-label-dot city-label-dot-geo" />
+              <span className="city-label-text">{c.city}</span>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Weather / selection labels */}
-      {weatherLabels.map((c, i) => (
-        <div
-          key={`weather-${i}`}
-          className="city-label"
-          data-lat={c.lat}
-          data-lon={c.lon}
-          data-bigcity="false"
-          style={{ opacity: 0 }}
-        >
-          <span className="city-label-dot" />
-          <span className="city-label-text">
-            {c.city}{c.temp !== undefined ? `: ${c.temp}°C` : ''}
-          </span>
-        </div>
-      ))}
+      <div ref={weatherContainerRef}>
+        {weatherLabels.map((c, i) => (
+          <div
+            key={`weather-${i}`}
+            className="city-label"
+            data-lat={c.lat}
+            data-lon={c.lon}
+            style={{ opacity: 0 }}
+          >
+            <span className="city-label-dot" />
+            <span className="city-label-text">
+              {c.city}{c.temp !== undefined ? `: ${c.temp}°C` : ''}
+            </span>
+          </div>
+        ))}
+      </div>
     </>
   );
+}
+
+// Position a single label element in screen space
+function positionLabel(el, globe, camera, rect) {
+  const lat = parseFloat(el.dataset.lat);
+  const lon = parseFloat(el.dataset.lon);
+  const pos      = latLonToVec3(lat, lon, EARTH_RADIUS * 1.06);
+  const worldPos = pos.clone().applyMatrix4(globe.matrixWorld);
+
+  // Back-face cull: hide labels on the far hemisphere
+  const surfaceNormal = worldPos.clone().normalize();
+  const camDir        = worldPos.clone().sub(camera.position).normalize();
+  if (surfaceNormal.dot(camDir) > 0) { el.style.opacity = '0'; return; }
+
+  const projected = worldPos.clone().project(camera);
+  el.style.left    = `${(projected.x *  0.5 + 0.5) * rect.width}px`;
+  el.style.top     = `${(1 - (projected.y * 0.5 + 0.5)) * rect.height}px`;
+  el.style.opacity = '1';
 }
 
 export default Globe;
