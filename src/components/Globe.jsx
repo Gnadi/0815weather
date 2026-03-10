@@ -100,7 +100,7 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
   const pinRef      = useRef(null);
   const frameRef    = useRef(null);
   const isDragging  = useRef(false);
-  const autoRotate  = useRef(true);
+  const autoRotate  = useRef(false);
 
   // Border lines state
   const bordersRef      = useRef(null);  // THREE.LineSegments once loaded
@@ -111,9 +111,8 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     zoomIn()  { cameraRef.current && (cameraRef.current.position.z = Math.max(cameraRef.current.position.z - 0.5, 2.5)); },
     zoomOut() { cameraRef.current && (cameraRef.current.position.z = Math.min(cameraRef.current.position.z + 0.5, 9)); },
     reset()   {
-      if (globeRef.current)  { globeRef.current.rotation.y = 0; }
+      if (globeRef.current)  { globeRef.current.rotation.set(0, 0, 0); }
       if (cameraRef.current) { cameraRef.current.position.set(0, 0, 5); }
-      autoRotate.current = true;
     },
   }));
 
