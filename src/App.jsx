@@ -6,6 +6,7 @@ import DateTime from './components/DateTime';
 import WeatherTicker from './components/WeatherTicker';
 import GlobeControls from './components/GlobeControls';
 import { fetchWeather, reverseGeocode, TICKER_CITIES } from './utils/api';
+import { useFavourites } from './hooks/useFavourites';
 
 const DEFAULT_LOCATION = { lat: 51.5074, lon: -0.1278, city: 'London', country: 'United Kingdom' };
 
@@ -15,6 +16,8 @@ export default function App() {
   const [loading,  setLoading]    = useState(true);
   const [tickerCities, setTickerCities] = useState([]);
   const globeRef = useRef(null);
+
+  const { favourites, addFavourite, removeFavourite, isFavourite } = useFavourites();
 
   // Load weather for a location
   const loadWeather = useCallback(async (lat, lon, city, country) => {
@@ -58,6 +61,11 @@ export default function App() {
     loadWeather(lat, lon, city, country);
   }
 
+  // When a favourite card is clicked, load that city and fly the globe to it
+  function onFavSelect(fav) {
+    loadWeather(fav.lat, fav.lon, fav.city, fav.country);
+  }
+
   const cityLabels = [
     ...tickerCities,
     location.city ? { ...location, lat: location.lat, lon: location.lon } : null,
@@ -87,7 +95,16 @@ export default function App() {
             onToggleLayers={() => {}}
           />
         </div>
-        <WeatherPanel location={location} weather={weather} loading={loading} />
+        <WeatherPanel
+          location={location}
+          weather={weather}
+          loading={loading}
+          favourites={favourites}
+          isFavourite={isFavourite}
+          onAddFavourite={addFavourite}
+          onRemoveFavourite={removeFavourite}
+          onFavSelect={onFavSelect}
+        />
       </main>
 
       {/* Bottom ticker */}

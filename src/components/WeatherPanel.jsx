@@ -1,4 +1,5 @@
 import { getWeatherInfo, WeatherIcon } from '../utils/weatherCodes.jsx';
+import FavouriteCities from './FavouriteCities.jsx';
 
 const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
 
@@ -23,7 +24,29 @@ function ForecastBar({ min, max, globalMin, globalMax }) {
   );
 }
 
-export default function WeatherPanel({ location, weather, loading }) {
+// Star toggle button for adding/removing current city from favourites
+function StarButton({ isFav, onClick }) {
+  return (
+    <button
+      className={`fav-star-btn ${isFav ? 'active' : ''}`}
+      onClick={onClick}
+      title={isFav ? 'Remove from favourites' : 'Add to favourites'}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24"
+        fill={isFav ? '#f5c518' : 'none'}
+        stroke={isFav ? '#f5c518' : 'currentColor'}
+        strokeWidth="1.8"
+      >
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    </button>
+  );
+}
+
+export default function WeatherPanel({
+  location, weather, loading,
+  favourites, isFavourite, onAddFavourite, onRemoveFavourite, onFavSelect,
+}) {
   if (loading) {
     return (
       <div className="weather-panel">
@@ -45,6 +68,12 @@ export default function WeatherPanel({ location, weather, loading }) {
           </svg>
           <p>Click on the globe to select a location</p>
         </div>
+        {/* Still show favourites even when no city selected */}
+        <FavouriteCities
+          favourites={favourites}
+          onSelect={onFavSelect}
+          onRemove={onRemoveFavourite}
+        />
       </div>
     );
   }
@@ -63,7 +92,6 @@ export default function WeatherPanel({ location, weather, loading }) {
   const globalMax = Math.max(...allMaxes);
   const globalMin = Math.min(...allMins);
 
-  // Build warning message from weather code
   let warning = null;
   if (cur.weather_code >= 95) warning = `Thunderstorm warning for ${location.city} area.`;
   else if (cur.weather_code >= 80) warning = `Heavy rain expected in the ${location.city} area.`;
@@ -71,12 +99,17 @@ export default function WeatherPanel({ location, weather, loading }) {
   else if (temp >= 38) warning = `Extreme heat warning: ${temp}°C in ${location.city}.`;
   else if (temp <= -15) warning = `Extreme cold warning: ${temp}°C in ${location.city}.`;
 
-  // Get day abbreviations for daily forecast
-  const today = new Date();
   const forecastDays = daily.time.map((t, i) => {
     const d = new Date(t + 'T00:00:00Z');
     return i === 0 ? 'TODAY' : DAYS[d.getUTCDay()];
   });
+
+  const isFav = isFavourite(location.lat, location.lon);
+
+  function toggleFav() {
+    if (isFav) onRemoveFavourite(location.lat, location.lon);
+    else onAddFavourite(location);
+  }
 
   return (
     <div className="weather-panel">
@@ -86,9 +119,7 @@ export default function WeatherPanel({ location, weather, loading }) {
           <h2 className="panel-city">{location.city}</h2>
           <p className="panel-country">{location.country}</p>
         </div>
-        <button className="kebab-btn" aria-label="More options">
-          <span /><span /><span />
-        </button>
+        <StarButton isFav={isFav} onClick={toggleFav} />
       </div>
 
       {/* Temperature */}
@@ -160,6 +191,13 @@ export default function WeatherPanel({ location, weather, loading }) {
           </div>
         </div>
       )}
+
+      {/* Favourite Cities */}
+      <FavouriteCities
+        favourites={favourites}
+        onSelect={onFavSelect}
+        onRemove={onRemoveFavourite}
+      />
     </div>
   );
 }

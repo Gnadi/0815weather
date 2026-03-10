@@ -420,6 +420,201 @@ html, body, #root {
 /* ── Scrollbar for panel ───────────────────────────────────────── */
 * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 
+/* ── Favourite star button (panel header) ──────────────────────── */
+.fav-star-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--subtext);
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.fav-star-btn:hover { background: rgba(245,197,24,0.12); transform: scale(1.1); }
+.fav-star-btn.active svg { filter: drop-shadow(0 0 4px rgba(245,197,24,0.6)); }
+
+/* ── Favourite cities section ──────────────────────────────────── */
+.fav-section {
+  border-top: 1px solid var(--border);
+  padding-top: 4px;
+}
+
+.fav-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--subtext);
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: color 0.2s;
+}
+.fav-section-header:hover { color: var(--text); }
+
+.fav-section-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.fav-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: rgba(245,197,24,0.18);
+  color: #f5c518;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.fav-chevron {
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.fav-chevron.open { transform: rotate(180deg); }
+
+/* ── Favourite city cards grid ─────────────────────────────────── */
+.fav-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.fav-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: start;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  position: relative;
+}
+.fav-card:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(0,200,255,0.25);
+  transform: translateY(-1px);
+}
+.fav-card:active { transform: translateY(0); }
+
+.fav-card-header {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.fav-card-spinner {
+  width: 28px; height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.fav-card-temp {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+
+.fav-card-city {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fav-card-country {
+  grid-column: 2;
+  grid-row: 3;
+  font-size: 11px;
+  color: var(--subtext);
+}
+
+.fav-card-condition {
+  grid-column: 2;
+  grid-row: 4;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.fav-card-meta {
+  grid-column: 3;
+  grid-row: 1 / 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  justify-content: center;
+}
+
+.fav-card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--subtext);
+  white-space: nowrap;
+}
+
+.fav-card-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--subtext);
+  font-size: 11px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.fav-card:hover .fav-card-remove { opacity: 1; }
+.fav-card-remove:hover {
+  background: rgba(255,80,80,0.15);
+  color: #ff6060;
+}
+
 /* ── Mobile layout (≤ 768px) ───────────────────────────────────── */
 @media (max-width: 768px) {
   html, body, #root { overflow: hidden; }
