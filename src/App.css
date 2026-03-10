@@ -668,10 +668,10 @@ html, body, #root {
     grid-template-columns: auto 1fr;
     padding: 12px 16px;
   }
-  /* Meta row spans full width below the text info */
+  /* Meta row goes after condition (row 4), not on top of it */
   .fav-card-meta {
     grid-column: 2;
-    grid-row: 4;
+    grid-row: 5;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
