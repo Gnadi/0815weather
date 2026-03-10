@@ -302,48 +302,90 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ti
 });
 
 // ── HTML label overlay projected onto the 3D globe ──────────────────
+// Priority thresholds (camera z = distance; smaller = more zoomed in):
+//   priority 1 → always shown
+//   priority 2 → shown when z < 4.2
+//   priority 3 → shown when z < 3.2
+// Selected city (priority 0) is always shown regardless of zoom.
 function CityLabels({ globeRef, cameraRef, mountRef, labels, selectedLocation }) {
-  // Run the projection loop whenever the label set or selected city changes
+  const elCacheRef = useRef([]); // DOM elements cached after each render
+
+  // Restart projection loop when the label set or selected city changes
   useEffect(() => {
-    const allLabels = [selectedLocation, ...labels].filter(Boolean);
-    if (!allLabels.length) return;
+    const hasSelected = !!selectedLocation;
+    const hasLabels   = labels.length > 0;
+    if (!hasSelected && !hasLabels) return;
 
     const globe  = globeRef.current;
     const camera = cameraRef.current;
     const mount  = mountRef.current;
     if (!globe || !camera || !mount) return;
 
+    // Cache elements once — querySelectorAll is expensive inside rAF
+    elCacheRef.current = Array.from(mount.querySelectorAll('.city-label'));
+
     let frameId;
     function update() {
       frameId = requestAnimationFrame(update);
-      mount.querySelectorAll('.city-label').forEach(el => {
-        const lat = parseFloat(el.dataset.lat);
-        const lon = parseFloat(el.dataset.lon);
+      const z           = camera.position.z;
+      const maxPriority = z < 3.2 ? 3 : z < 4.2 ? 2 : 1;
+      const rect        = mount.getBoundingClientRect();
+
+      for (const el of elCacheRef.current) {
+        // Zoom-based LOD: hide low-priority labels when zoomed out
+        // Priority 0 = selected city, always shown
+        const p = el.dataset.priority | 0;
+        if (p !== 0 && p > maxPriority) { el.style.opacity = '0'; continue; }
+
+        const lat = +el.dataset.lat;
+        const lon = +el.dataset.lon;
         const pos = latLonToVec3(lat, lon, EARTH_RADIUS * 1.06);
 
-        // Transform to world space and cull back-facing labels
+        // Back-face cull: hide labels on the far side of the globe
         const worldPos = pos.clone().applyMatrix4(globe.matrixWorld);
-        const dot = worldPos.clone().normalize().dot(worldPos.clone().sub(camera.position).normalize());
-        if (dot > 0) { el.style.opacity = '0'; return; }
+        const dot = worldPos.clone().normalize()
+          .dot(worldPos.clone().sub(camera.position).normalize());
+        if (dot > 0) { el.style.opacity = '0'; continue; }
 
+        // Project to screen space
         const proj = worldPos.clone().project(camera);
-        const rect = mount.getBoundingClientRect();
         el.style.left    = `${(proj.x * 0.5 + 0.5) * rect.width}px`;
         el.style.top     = `${(1 - (proj.y * 0.5 + 0.5)) * rect.height}px`;
         el.style.opacity = '1';
-      });
+      }
     }
     update();
     return () => cancelAnimationFrame(frameId);
   }, [labels, selectedLocation]);
 
-  const allLabels = [selectedLocation, ...labels].filter(Boolean);
-  if (!allLabels.length) return null;
+  const hasAny = selectedLocation || labels.length > 0;
+  if (!hasAny) return null;
 
   return (
     <>
-      {allLabels.map((c, i) => (
-        <div key={i} className="city-label" data-lat={c.lat} data-lon={c.lon} style={{ opacity: 0 }}>
+      {/* Selected city — priority 0, always visible */}
+      {selectedLocation && (
+        <div
+          className="city-label"
+          data-lat={selectedLocation.lat}
+          data-lon={selectedLocation.lon}
+          data-priority="0"
+          style={{ opacity: 0 }}
+        >
+          <span className="city-label-dot" />
+          <span className="city-label-text">{selectedLocation.city}</span>
+        </div>
+      )}
+      {/* Layer-mode labels — filtered by zoom priority */}
+      {labels.map((c, i) => (
+        <div
+          key={i}
+          className="city-label"
+          data-lat={c.lat}
+          data-lon={c.lon}
+          data-priority={c.priority ?? 1}
+          style={{ opacity: 0 }}
+        >
           <span className="city-label-dot" />
           <span className="city-label-text">
             {c.city}{c.temp !== undefined ? `: ${c.temp}°C` : ''}
