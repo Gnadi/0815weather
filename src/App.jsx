@@ -21,6 +21,7 @@ export default function App() {
   const { favourites, addFavourite, removeFavourite, isFavourite } = useFavourites();
   const [gameMode, setGameMode]     = useState(false);
   const [gameModeKey, setGameModeKey] = useState(0);
+  const [layerMode, setLayerMode]   = useState(0); // 0=plain 1=borders 2=capitals 3=cities
 
   // Load weather for a location
   const loadWeather = useCallback(async (lat, lon, city, country) => {
@@ -101,12 +102,14 @@ export default function App() {
             onLocationSelect={onLocationSelect}
             selectedLocation={location}
             cityLabels={cityLabels}
+            layerMode={layerMode}
           />
           <GlobeControls
             onZoomIn={() => globeRef.current?.zoomIn()}
             onZoomOut={() => globeRef.current?.zoomOut()}
             onReset={() => globeRef.current?.reset()}
-            onToggleLayers={() => {}}
+            onToggleLayers={() => setLayerMode(m => (m + 1) % 4)}
+            layerMode={layerMode}
           />
         </div>
         {gameMode ? (

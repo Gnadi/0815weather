@@ -207,6 +207,43 @@ html, body, #root {
 .ctrl-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
 .ctrl-divider { border-left: 1px solid var(--border); margin-left: 4px; padding-left: 12px; border-radius: 0; }
 
+/* Layer button active state */
+.ctrl-btn-layer-active {
+  color: var(--accent);
+}
+.ctrl-btn-layer-active:hover {
+  color: var(--accent);
+  background: rgba(0, 200, 255, 0.08);
+}
+
+/* Inline label shown next to layer icon when active */
+.ctrl-layer-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* ── Geo city labels (capitals / cities overlay) ───────────────── */
+.city-label-geo {
+  gap: 4px;
+}
+.city-label-dot-geo {
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+}
+.city-label-geo .city-label-text {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.7);
+  background: none;
+}
+
 /* ── Weather panel ─────────────────────────────────────────────── */
 .weather-panel {
   width: 340px;
