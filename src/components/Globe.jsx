@@ -1,11 +1,20 @@
-import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
+import { CAPITALS, MAJOR_CITIES } from '../utils/cityData';
 
 const EARTH_RADIUS = 2;
 const EARTH_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
 const EARTH_BUMP    = 'https://unpkg.com/three-globe/example/img/earth-topology.png';
 
-// Convert lat/lon to 3D point on sphere (accounting for Three.js coordinate system)
+// Layer modes
+export const LAYER_PLAIN    = 3;
+export const LAYER_BORDERS  = 0;
+export const LAYER_CAPITALS = 1;
+export const LAYER_CITIES   = 2;
+
+const CAPITALS_AND_CITIES = [...CAPITALS, ...MAJOR_CITIES];
+
+// Convert lat/lon to 3D point on sphere
 function latLonToVec3(lat, lon, radius) {
   const phi   = (90 - lat) * (Math.PI / 180);
   const theta = (lon + 180) * (Math.PI / 180);
@@ -24,7 +33,31 @@ function vec3ToLatLon(point, radius) {
   return { lat, lon: lon < -180 ? lon + 360 : lon };
 }
 
-const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, cityLabels }, ref) {
+// Decode world-atlas topojson arcs into a single merged LineSegments object.
+// Each arc is a sequence of quantized [dx,dy] deltas; we sum them and apply
+// the topology transform to get geographic lon/lat.
+function buildBorderLines(topo) {
+  const { scale: [sx, sy], translate: [tx, ty] } = topo.transform;
+  const verts = [];
+
+  for (const arc of topo.arcs) {
+    let x = 0, y = 0;
+    const pts = arc.map(([dx, dy]) => {
+      x += dx; y += dy;
+      return latLonToVec3(y * sy + ty, x * sx + tx, EARTH_RADIUS * 1.003);
+    });
+    // Store as line segments (each consecutive pair)
+    for (let i = 0; i < pts.length - 1; i++) {
+      verts.push(pts[i], pts[i + 1]);
+    }
+  }
+
+  const geom = new THREE.BufferGeometry().setFromPoints(verts);
+  const mat  = new THREE.LineBasicMaterial({ color: 0x5599cc, transparent: true, opacity: 0.55 });
+  return new THREE.LineSegments(geom, mat);
+}
+
+const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, tickerCities, layerMode }, ref) {
   const mountRef    = useRef(null);
   const sceneRef    = useRef(null);
   const cameraRef   = useRef(null);
@@ -34,6 +67,22 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
   const frameRef    = useRef(null);
   const isDragging  = useRef(false);
   const autoRotate  = useRef(true);
+  const borderRef   = useRef(null);   // THREE.LineSegments for country borders
+  const layerModeRef = useRef(layerMode); // current mode for async border load
+
+  // Keep layerModeRef in sync
+  useEffect(() => { layerModeRef.current = layerMode; }, [layerMode]);
+
+  // Compute which HTML labels to show based on mode
+  const labels = useMemo(() => {
+    switch (layerMode) {
+      case LAYER_BORDERS:  return [];
+      case LAYER_CAPITALS: return CAPITALS;
+      case LAYER_CITIES:   return CAPITALS_AND_CITIES;
+      case LAYER_PLAIN:
+      default:             return tickerCities ?? [];
+    }
+  }, [layerMode, tickerCities]);
 
   useImperativeHandle(ref, () => ({
     zoomIn()  { cameraRef.current && (cameraRef.current.position.z = Math.max(cameraRef.current.position.z - 0.5, 2.5)); },
@@ -45,21 +94,19 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     },
   }));
 
+  // ── One-time scene setup ───────────────────────────────────────────
   useEffect(() => {
     const mount = mountRef.current;
     const W = mount.clientWidth;
     const H = mount.clientHeight;
 
-    // Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    // Camera
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
     camera.position.set(0, 0, 5);
     cameraRef.current = camera;
 
-    // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(W, H);
@@ -67,7 +114,6 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     mount.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Lights
     scene.add(new THREE.AmbientLight(0x404060, 0.8));
     const sun = new THREE.DirectionalLight(0xffffff, 1.4);
     sun.position.set(5, 3, 5);
@@ -76,7 +122,6 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     backLight.position.set(-5, -2, -5);
     scene.add(backLight);
 
-    // Stars background
     const starGeom = new THREE.BufferGeometry();
     const starCount = 2000;
     const starVerts = new Float32Array(starCount * 3);
@@ -84,70 +129,46 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     starGeom.setAttribute('position', new THREE.BufferAttribute(starVerts, 3));
     scene.add(new THREE.Points(starGeom, new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, sizeAttenuation: true })));
 
-    // Earth sphere
     const loader  = new THREE.TextureLoader();
     const mapTex  = loader.load(EARTH_TEXTURE);
     const bumpTex = loader.load(EARTH_BUMP);
-    // Max anisotropy = sharp textures at oblique angles when zoomed in
     const maxAniso = renderer.capabilities.getMaxAnisotropy();
     mapTex.anisotropy  = maxAniso;
     bumpTex.anisotropy = maxAniso;
+
     const earthGeom = new THREE.SphereGeometry(EARTH_RADIUS, 96, 96);
     const earthMat  = new THREE.MeshPhongMaterial({
-      map:         mapTex,
-      bumpMap:     bumpTex,
-      bumpScale:   0.05,
-      specular:    new THREE.Color(0x224466),
-      shininess:   15,
+      map: mapTex, bumpMap: bumpTex, bumpScale: 0.05,
+      specular: new THREE.Color(0x224466), shininess: 15,
     });
     const globe = new THREE.Mesh(earthGeom, earthMat);
     scene.add(globe);
     globeRef.current = globe;
 
-    // Atmosphere glow
-    const atmosGeom = new THREE.SphereGeometry(EARTH_RADIUS * 1.02, 64, 64);
-    const atmosMat  = new THREE.MeshBasicMaterial({
-      color: 0x1166aa,
-      transparent: true,
-      opacity: 0.08,
-      side: THREE.BackSide,
-    });
-    scene.add(new THREE.Mesh(atmosGeom, atmosMat));
+    scene.add(new THREE.Mesh(
+      new THREE.SphereGeometry(EARTH_RADIUS * 1.02, 64, 64),
+      new THREE.MeshBasicMaterial({ color: 0x1166aa, transparent: true, opacity: 0.08, side: THREE.BackSide })
+    ));
+    scene.add(new THREE.Mesh(
+      new THREE.SphereGeometry(EARTH_RADIUS * 1.06, 64, 64),
+      new THREE.MeshBasicMaterial({ color: 0x2288ff, transparent: true, opacity: 0.04, side: THREE.BackSide })
+    ));
 
-    // Outer glow ring
-    const glowGeom = new THREE.SphereGeometry(EARTH_RADIUS * 1.06, 64, 64);
-    const glowMat  = new THREE.MeshBasicMaterial({
-      color: 0x2288ff,
-      transparent: true,
-      opacity: 0.04,
-      side: THREE.BackSide,
-    });
-    scene.add(new THREE.Mesh(glowGeom, glowMat));
-
-    // City pin (updated via selectedLocation effect)
     const pinGeom = new THREE.SphereGeometry(0.035, 16, 16);
-    const pinMat  = new THREE.MeshBasicMaterial({ color: 0xffdd00 });
-    const pin = new THREE.Mesh(pinGeom, pinMat);
+    const pin = new THREE.Mesh(pinGeom, new THREE.MeshBasicMaterial({ color: 0xffdd00 }));
     pin.visible = false;
     globe.add(pin);
     pinRef.current = pin;
 
-    // Mouse state for orbit
+    // Mouse / touch orbit
     let mouseDown = false;
     let lastMouse = { x: 0, y: 0 };
     let rotVel    = { x: 0, y: 0 };
 
-    function onMouseDown(e) {
-      mouseDown = true;
-      isDragging.current = false;
-      lastMouse = { x: e.clientX, y: e.clientY };
-      rotVel = { x: 0, y: 0 };
-    }
-
+    function onMouseDown(e) { mouseDown = true; isDragging.current = false; lastMouse = { x: e.clientX, y: e.clientY }; rotVel = { x: 0, y: 0 }; }
     function onMouseMove(e) {
       if (!mouseDown) return;
-      const dx = e.clientX - lastMouse.x;
-      const dy = e.clientY - lastMouse.y;
+      const dx = e.clientX - lastMouse.x, dy = e.clientY - lastMouse.y;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDragging.current = true;
       globe.rotation.y += dx * 0.003;
       globe.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, globe.rotation.x + dy * 0.003));
@@ -155,49 +176,23 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
       lastMouse = { x: e.clientX, y: e.clientY };
       autoRotate.current = false;
     }
-
-    function onMouseUp(e) {
-      mouseDown = false;
-      // If not dragging → it was a click
-      if (!isDragging.current) handleGlobeClick(e);
-    }
+    function onMouseUp(e) { mouseDown = false; if (!isDragging.current) handleGlobeClick(e); }
 
     let lastPinchDist = null;
-
     function onTouchStart(e) {
-      if (e.touches.length === 2) {
-        lastPinchDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        mouseDown = false;
-        return;
-      }
-      const t = e.touches[0];
-      mouseDown = true;
-      isDragging.current = false;
-      lastMouse = { x: t.clientX, y: t.clientY };
-      rotVel = { x: 0, y: 0 };
+      if (e.touches.length === 2) { lastPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); mouseDown = false; return; }
+      const t = e.touches[0]; mouseDown = true; isDragging.current = false; lastMouse = { x: t.clientX, y: t.clientY }; rotVel = { x: 0, y: 0 };
     }
     function onTouchMove(e) {
       e.preventDefault();
       if (e.touches.length === 2) {
-        // Pinch-to-zoom
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        if (lastPinchDist !== null) {
-          camera.position.z = Math.max(2.5, Math.min(9, camera.position.z + (lastPinchDist - dist) * 0.02));
-        }
-        lastPinchDist = dist;
-        return;
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        if (lastPinchDist !== null) camera.position.z = Math.max(2.5, Math.min(9, camera.position.z + (lastPinchDist - dist) * 0.02));
+        lastPinchDist = dist; return;
       }
       lastPinchDist = null;
       if (!mouseDown) return;
-      const t = e.touches[0];
-      const dx = t.clientX - lastMouse.x;
-      const dy = t.clientY - lastMouse.y;
+      const t = e.touches[0], dx = t.clientX - lastMouse.x, dy = t.clientY - lastMouse.y;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDragging.current = true;
       globe.rotation.y += dx * 0.003;
       globe.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, globe.rotation.x + dy * 0.003));
@@ -205,18 +200,12 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
       lastMouse = { x: t.clientX, y: t.clientY };
       autoRotate.current = false;
     }
-    function onTouchEnd(e) {
-      lastPinchDist = null;
-      mouseDown = false;
-      if (!isDragging.current && e.changedTouches.length > 0) {
-        handleGlobeClick(e.changedTouches[0]);
-      }
-    }
+    function onTouchEnd(e) { lastPinchDist = null; mouseDown = false; if (!isDragging.current && e.changedTouches.length > 0) handleGlobeClick(e.changedTouches[0]); }
 
     function handleGlobeClick(e) {
       const rect = mount.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width)  * 2 - 1;
-      const y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
       const hits = raycaster.intersectObject(globe);
@@ -227,10 +216,7 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
       }
     }
 
-    function onWheel(e) {
-      e.preventDefault();
-      camera.position.z = Math.max(2.5, Math.min(9, camera.position.z + e.deltaY * 0.005));
-    }
+    function onWheel(e) { e.preventDefault(); camera.position.z = Math.max(2.5, Math.min(9, camera.position.z + e.deltaY * 0.005)); }
 
     mount.addEventListener('mousedown',  onMouseDown);
     mount.addEventListener('mousemove',  onMouseMove);
@@ -240,30 +226,23 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     mount.addEventListener('touchend',   onTouchEnd,   { passive: true });
     mount.addEventListener('wheel',      onWheel,      { passive: false });
 
-    // Animation loop
     function animate() {
       frameRef.current = requestAnimationFrame(animate);
       if (autoRotate.current) {
         globe.rotation.y += 0.0005;
       } else {
-        // Damping — 0.92 decays spin quickly so it doesn't feel uncontrolled
         globe.rotation.y += rotVel.y;
         globe.rotation.x += rotVel.x;
-        rotVel.x *= 0.92;
-        rotVel.y *= 0.92;
+        rotVel.x *= 0.92; rotVel.y *= 0.92;
         if (Math.abs(rotVel.x) < 0.0001 && Math.abs(rotVel.y) < 0.0001) autoRotate.current = true;
       }
       renderer.render(scene, camera);
     }
     animate();
 
-    // Resize
     function onResize() {
-      const W = mount.clientWidth;
-      const H = mount.clientHeight;
-      camera.aspect = W / H;
-      camera.updateProjectionMatrix();
-      renderer.setSize(W, H);
+      const W = mount.clientWidth, H = mount.clientHeight;
+      camera.aspect = W / H; camera.updateProjectionMatrix(); renderer.setSize(W, H);
     }
     window.addEventListener('resize', onResize);
 
@@ -282,97 +261,89 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     };
   }, []);
 
-  // Update pin when selectedLocation changes
+  // ── Fetch country borders once, cache as LineSegments on the globe ──
   useEffect(() => {
-    if (!pinRef.current || !globeRef.current || !selectedLocation) return;
-    const { lat, lon } = selectedLocation;
-    const pos = latLonToVec3(lat, lon, EARTH_RADIUS * 1.015);
-    // pos is in world space relative to globe center
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+      .then(r => r.json())
+      .then(topo => {
+        if (!globeRef.current) return;
+        const lines = buildBorderLines(topo);
+        lines.visible = layerModeRef.current === LAYER_BORDERS;
+        globeRef.current.add(lines);
+        borderRef.current = lines;
+      })
+      .catch(() => {}); // silently ignore if offline
+  }, []);
+
+  // ── Show / hide borders when layer mode changes ────────────────────
+  useEffect(() => {
+    if (borderRef.current) borderRef.current.visible = (layerMode === LAYER_BORDERS);
+  }, [layerMode]);
+
+  // ── Update pin position when selected location changes ─────────────
+  useEffect(() => {
+    if (!pinRef.current || !selectedLocation) return;
+    const pos = latLonToVec3(selectedLocation.lat, selectedLocation.lon, EARTH_RADIUS * 1.015);
     pinRef.current.position.copy(pos);
     pinRef.current.visible = true;
   }, [selectedLocation]);
 
-  // City labels rendered as HTML overlays
-  const labelEls = cityLabels?.map((c, i) => {
-    if (!globeRef.current || !cameraRef.current || !rendererRef.current) return null;
-    return null; // Labels are updated in useEffect below
-  });
-
   return (
     <div className="globe-mount" ref={mountRef}>
-      {/* City label HTML overlay - rendered via absolute positioning via separate effect */}
       <CityLabels
         globeRef={globeRef}
         cameraRef={cameraRef}
-        rendererRef={rendererRef}
         mountRef={mountRef}
+        labels={labels}
         selectedLocation={selectedLocation}
-        cityLabels={cityLabels}
       />
     </div>
   );
 });
 
-function CityLabels({ globeRef, cameraRef, mountRef, selectedLocation, cityLabels }) {
-  const labelsRef = useRef([]);
-
+// ── HTML label overlay projected onto the 3D globe ──────────────────
+function CityLabels({ globeRef, cameraRef, mountRef, labels, selectedLocation }) {
+  // Run the projection loop whenever the label set or selected city changes
   useEffect(() => {
-    if (!selectedLocation) return;
+    const allLabels = [selectedLocation, ...labels].filter(Boolean);
+    if (!allLabels.length) return;
 
-    const globe   = globeRef.current;
-    const camera  = cameraRef.current;
-    const mount   = mountRef.current;
+    const globe  = globeRef.current;
+    const camera = cameraRef.current;
+    const mount  = mountRef.current;
     if (!globe || !camera || !mount) return;
 
     let frameId;
     function update() {
       frameId = requestAnimationFrame(update);
-      const labels = mount.querySelectorAll('.city-label');
-      labels.forEach(el => {
+      mount.querySelectorAll('.city-label').forEach(el => {
         const lat = parseFloat(el.dataset.lat);
         const lon = parseFloat(el.dataset.lon);
         const pos = latLonToVec3(lat, lon, EARTH_RADIUS * 1.06);
 
-        // Transform to world space
+        // Transform to world space and cull back-facing labels
         const worldPos = pos.clone().applyMatrix4(globe.matrixWorld);
-
-        // Check if facing camera
-        const camDir = worldPos.clone().sub(camera.position).normalize();
-        const surfaceNormal = worldPos.clone().normalize();
-        const dot = surfaceNormal.dot(camDir);
+        const dot = worldPos.clone().normalize().dot(worldPos.clone().sub(camera.position).normalize());
         if (dot > 0) { el.style.opacity = '0'; return; }
 
-        // Project to screen
-        const projected = worldPos.clone().project(camera);
+        const proj = worldPos.clone().project(camera);
         const rect = mount.getBoundingClientRect();
-        const x = (projected.x * 0.5 + 0.5) * rect.width;
-        const y = (1 - (projected.y * 0.5 + 0.5)) * rect.height;
-        el.style.left   = `${x}px`;
-        el.style.top    = `${y}px`;
+        el.style.left    = `${(proj.x * 0.5 + 0.5) * rect.width}px`;
+        el.style.top     = `${(1 - (proj.y * 0.5 + 0.5)) * rect.height}px`;
         el.style.opacity = '1';
       });
     }
     update();
     return () => cancelAnimationFrame(frameId);
-  }, [selectedLocation]);
+  }, [labels, selectedLocation]);
 
-  if (!selectedLocation) return null;
-
-  const allLabels = [
-    selectedLocation,
-    ...(cityLabels || []),
-  ].filter(Boolean);
+  const allLabels = [selectedLocation, ...labels].filter(Boolean);
+  if (!allLabels.length) return null;
 
   return (
     <>
-      {allLabels.slice(0, 6).map((c, i) => (
-        <div
-          key={i}
-          className="city-label"
-          data-lat={c.lat}
-          data-lon={c.lon}
-          style={{ opacity: 0 }}
-        >
+      {allLabels.map((c, i) => (
+        <div key={i} className="city-label" data-lat={c.lat} data-lon={c.lon} style={{ opacity: 0 }}>
           <span className="city-label-dot" />
           <span className="city-label-text">
             {c.city}{c.temp !== undefined ? `: ${c.temp}°C` : ''}
