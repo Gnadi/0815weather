@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Globe from './components/Globe';
 import WeatherPanel from './components/WeatherPanel';
+import GameMode from './components/GameMode';
 import SearchBar from './components/SearchBar';
 import DateTime from './components/DateTime';
 import WeatherTicker from './components/WeatherTicker';
@@ -18,6 +19,8 @@ export default function App() {
   const globeRef = useRef(null);
 
   const { favourites, addFavourite, removeFavourite, isFavourite } = useFavourites();
+  const [gameMode, setGameMode]     = useState(false);
+  const [gameModeKey, setGameModeKey] = useState(0);
 
   // Load weather for a location
   const loadWeather = useCallback(async (lat, lon, city, country) => {
@@ -76,6 +79,17 @@ export default function App() {
       {/* Top bar */}
       <header className="topbar">
         <SearchBar onCitySelect={onCitySelect} />
+        <button
+          className={`game-mode-btn ${gameMode ? 'active' : ''}`}
+          onClick={() => setGameMode(g => !g)}
+          title={gameMode ? 'Exit Game Mode' : 'Play Game Mode'}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M12 12h.01M8 10v4M6 12h4M16 10v4M14 12h4" />
+          </svg>
+          {gameMode ? 'EXIT GAME' : 'GAME MODE'}
+        </button>
         <DateTime />
       </header>
 
@@ -95,16 +109,24 @@ export default function App() {
             onToggleLayers={() => {}}
           />
         </div>
-        <WeatherPanel
-          location={location}
-          weather={weather}
-          loading={loading}
-          favourites={favourites}
-          isFavourite={isFavourite}
-          onAddFavourite={addFavourite}
-          onRemoveFavourite={removeFavourite}
-          onFavSelect={onFavSelect}
-        />
+        {gameMode ? (
+          <GameMode
+            key={gameModeKey}
+            onExit={() => setGameMode(false)}
+            onPlayAgain={() => setGameModeKey(k => k + 1)}
+          />
+        ) : (
+          <WeatherPanel
+            location={location}
+            weather={weather}
+            loading={loading}
+            favourites={favourites}
+            isFavourite={isFavourite}
+            onAddFavourite={addFavourite}
+            onRemoveFavourite={removeFavourite}
+            onFavSelect={onFavSelect}
+          />
+        )}
       </main>
 
       {/* Bottom ticker */}
