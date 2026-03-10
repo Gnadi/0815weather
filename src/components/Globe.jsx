@@ -164,6 +164,7 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ti
     let mouseDown = false;
     let lastMouse = { x: 0, y: 0 };
     let rotVel    = { x: 0, y: 0 };
+    let tapStart  = null; // saved touch-down position for tap detection
 
     function onMouseDown(e) { mouseDown = true; isDragging.current = false; lastMouse = { x: e.clientX, y: e.clientY }; rotVel = { x: 0, y: 0 }; }
     function onMouseMove(e) {
@@ -176,12 +177,17 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ti
       lastMouse = { x: e.clientX, y: e.clientY };
       autoRotate.current = false;
     }
-    function onMouseUp(e) { mouseDown = false; if (!isDragging.current) handleGlobeClick(e); }
+    function onMouseUp(e) { mouseDown = false; if (!isDragging.current) handleGlobeClick(e.clientX, e.clientY); }
 
     let lastPinchDist = null;
     function onTouchStart(e) {
       if (e.touches.length === 2) { lastPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); mouseDown = false; return; }
-      const t = e.touches[0]; mouseDown = true; isDragging.current = false; lastMouse = { x: t.clientX, y: t.clientY }; rotVel = { x: 0, y: 0 };
+      const t = e.touches[0];
+      mouseDown = true;
+      isDragging.current = false;
+      tapStart  = { x: t.clientX, y: t.clientY }; // snapshot before any rotation
+      lastMouse = { x: t.clientX, y: t.clientY };
+      rotVel    = { x: 0, y: 0 };
     }
     function onTouchMove(e) {
       e.preventDefault();
@@ -194,18 +200,30 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ti
       if (!mouseDown) return;
       const t = e.touches[0], dx = t.clientX - lastMouse.x, dy = t.clientY - lastMouse.y;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDragging.current = true;
-      globe.rotation.y += dx * 0.003;
-      globe.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, globe.rotation.x + dy * 0.003));
-      rotVel = { x: dy * 0.001, y: dx * 0.001 };
+      // Only rotate once the drag threshold is crossed — sub-threshold
+      // finger wobble must not shift the globe before a tap is detected.
+      if (isDragging.current) {
+        globe.rotation.y += dx * 0.003;
+        globe.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, globe.rotation.x + dy * 0.003));
+        rotVel = { x: dy * 0.001, y: dx * 0.001 };
+        autoRotate.current = false;
+      }
       lastMouse = { x: t.clientX, y: t.clientY };
-      autoRotate.current = false;
     }
-    function onTouchEnd(e) { lastPinchDist = null; mouseDown = false; if (!isDragging.current && e.changedTouches.length > 0) handleGlobeClick(e.changedTouches[0]); }
+    function onTouchEnd(e) {
+      lastPinchDist = null;
+      mouseDown = false;
+      // Use the touch-DOWN position (globe hasn't rotated yet) — not the
+      // lift position which may differ by a few pixels.
+      if (!isDragging.current && tapStart) handleGlobeClick(tapStart.x, tapStart.y);
+      tapStart = null;
+    }
 
-    function handleGlobeClick(e) {
-      const rect = mount.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    function handleGlobeClick(clientX, clientY) {
+      // Use the canvas rect directly — most accurate source for the 3D viewport.
+      const rect = renderer.domElement.getBoundingClientRect();
+      const x =  ((clientX - rect.left) / rect.width)  * 2 - 1;
+      const y = -((clientY - rect.top)  / rect.height) * 2 + 1;
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
       const hits = raycaster.intersectObject(globe);
