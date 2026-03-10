@@ -166,7 +166,7 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ti
     let rotVel    = { x: 0, y: 0 };
     let tapStart  = null; // saved touch-down position for tap detection
 
-    function onMouseDown(e) { mouseDown = true; isDragging.current = false; lastMouse = { x: e.clientX, y: e.clientY }; rotVel = { x: 0, y: 0 }; }
+    function onMouseDown(e) { mouseDown = true; isDragging.current = false; autoRotate.current = false; lastMouse = { x: e.clientX, y: e.clientY }; rotVel = { x: 0, y: 0 }; }
     function onMouseMove(e) {
       if (!mouseDown) return;
       const dx = e.clientX - lastMouse.x, dy = e.clientY - lastMouse.y;
@@ -185,6 +185,7 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ti
       const t = e.touches[0];
       mouseDown = true;
       isDragging.current = false;
+      autoRotate.current = false; // freeze globe immediately so tap position is exact
       tapStart  = { x: t.clientX, y: t.clientY }; // snapshot before any rotation
       lastMouse = { x: t.clientX, y: t.clientY };
       rotVel    = { x: 0, y: 0 };
