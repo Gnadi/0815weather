@@ -695,3 +695,369 @@ html, body, #root {
      but at minimum ensure text stays legible */
   .city-label-text { font-size: 10px; }
 }
+
+/* ── Game Mode button (topbar) ─────────────────────────────────── */
+.game-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  padding: 8px 16px;
+  color: var(--subtext);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+.game-mode-btn:hover {
+  color: var(--text);
+  border-color: rgba(0,200,255,0.35);
+  background: rgba(0,200,255,0.07);
+}
+.game-mode-btn.active {
+  color: var(--accent);
+  border-color: rgba(0,200,255,0.4);
+  background: rgba(0,200,255,0.08);
+}
+
+/* ── Game panel (extends .weather-panel) ───────────────────────── */
+.game-panel {
+  border-left-color: rgba(0,200,255,0.18);
+  gap: 14px;
+}
+
+/* ── Game header: round dots + score ───────────────────────────── */
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(0,200,255,0.05);
+  border: 1px solid rgba(0,200,255,0.12);
+  border-radius: var(--radius-sm);
+}
+
+.game-round-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.game-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.game-dot.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(0,200,255,0.6);
+}
+.game-dot.done {
+  background: rgba(0,200,255,0.4);
+  border-color: rgba(0,200,255,0.4);
+}
+.game-round-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--subtext);
+  letter-spacing: 0.3px;
+}
+
+.game-scores {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.game-score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.game-score-label {
+  font-size: 10px;
+  color: var(--subtext);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.game-score-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+.game-score-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+}
+
+/* ── Mystery city placeholder ───────────────────────────────────── */
+.game-mystery-name {
+  color: var(--accent) !important;
+  opacity: 0.7;
+  font-style: italic;
+}
+.game-mystery-sub {
+  font-size: 12px !important;
+}
+
+/* ── Hints ──────────────────────────────────────────────────────── */
+.game-hints-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.game-hints-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--subtext);
+  letter-spacing: 0.8px;
+}
+.game-hints-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.game-hint-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+}
+.game-hint-btn:hover:not(:disabled):not(.used) {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(0,200,255,0.25);
+}
+.game-hint-btn:disabled:not(.used) {
+  opacity: 0.4;
+  cursor: default;
+}
+.game-hint-btn.used {
+  background: rgba(0,200,255,0.06);
+  border-color: rgba(0,200,255,0.2);
+  cursor: default;
+}
+.hint-label-name {
+  font-weight: 600;
+  color: var(--subtext);
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+.hint-cost {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ff8844;
+}
+.hint-revealed {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 13px;
+}
+
+/* ── Guess form ─────────────────────────────────────────────────── */
+.game-guess-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.game-wrong-info {
+  font-size: 12px;
+  color: #ff8844;
+  font-weight: 600;
+  text-align: center;
+}
+.game-guess-row {
+  display: flex;
+  gap: 8px;
+}
+.game-guess-input {
+  flex: 1;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.game-guess-input::placeholder { color: var(--subtext); }
+.game-guess-input:focus {
+  border-color: rgba(0,200,255,0.4);
+  background: rgba(255,255,255,0.08);
+}
+.game-guess-input.error {
+  border-color: rgba(255,80,80,0.6);
+  background: rgba(255,80,80,0.06);
+}
+.game-submit-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  color: #000;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.game-submit-btn:hover  { opacity: 0.85; }
+.game-submit-btn:active { transform: scale(0.97); }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+.game-guess-form.shake { animation: shake 0.35s ease; }
+
+/* ── Correct result card ────────────────────────────────────────── */
+.game-result-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,200,255,0.07);
+  border: 1px solid rgba(0,200,255,0.25);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  text-align: center;
+}
+.game-result-check {
+  font-size: 28px;
+  color: #00e87a;
+  font-weight: 900;
+  line-height: 1;
+}
+.game-result-city {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.game-result-country {
+  font-size: 14px;
+  color: var(--subtext);
+}
+.game-result-pts {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 8px 0 4px;
+}
+
+/* ── Game over screen ───────────────────────────────────────────── */
+.game-over-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 0;
+  text-align: center;
+}
+.game-over-trophy { font-size: 48px; line-height: 1; }
+.game-over-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.game-over-score {
+  font-size: 56px;
+  font-weight: 200;
+  letter-spacing: -2px;
+  color: var(--accent);
+  line-height: 1;
+}
+.game-over-score span {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--subtext);
+  letter-spacing: 0;
+}
+.game-over-highscore {
+  font-size: 13px;
+  color: var(--subtext);
+  margin-bottom: 8px;
+}
+.game-rounds-breakdown {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.game-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.game-breakdown-city { color: var(--subtext); }
+.game-breakdown-pts  { font-weight: 700; color: var(--accent); }
+
+.game-over-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  width: 100%;
+}
+.game-btn-primary {
+  flex: 1;
+  padding: 13px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #000;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.game-btn-primary:hover { opacity: 0.85; }
+.game-btn-secondary {
+  flex: 1;
+  padding: 13px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--subtext);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.game-btn-secondary:hover { color: var(--text); background: rgba(255,255,255,0.09); }
+
+/* ── Game mode mobile tweaks ────────────────────────────────────── */
+@media (max-width: 768px) {
+  .game-mode-btn { padding: 8px 12px; font-size: 12px; }
+  .game-panel { padding: 14px 16px; }
+  .game-score-val { font-size: 16px; }
+  .game-over-score { font-size: 44px; }
+}
