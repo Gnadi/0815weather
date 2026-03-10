@@ -85,11 +85,17 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     scene.add(new THREE.Points(starGeom, new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, sizeAttenuation: true })));
 
     // Earth sphere
-    const loader = new THREE.TextureLoader();
-    const earthGeom = new THREE.SphereGeometry(EARTH_RADIUS, 64, 64);
+    const loader  = new THREE.TextureLoader();
+    const mapTex  = loader.load(EARTH_TEXTURE);
+    const bumpTex = loader.load(EARTH_BUMP);
+    // Max anisotropy = sharp textures at oblique angles when zoomed in
+    const maxAniso = renderer.capabilities.getMaxAnisotropy();
+    mapTex.anisotropy  = maxAniso;
+    bumpTex.anisotropy = maxAniso;
+    const earthGeom = new THREE.SphereGeometry(EARTH_RADIUS, 96, 96);
     const earthMat  = new THREE.MeshPhongMaterial({
-      map:         loader.load(EARTH_TEXTURE),
-      bumpMap:     loader.load(EARTH_BUMP),
+      map:         mapTex,
+      bumpMap:     bumpTex,
       bumpScale:   0.05,
       specular:    new THREE.Color(0x224466),
       shininess:   15,
@@ -143,9 +149,9 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
       const dx = e.clientX - lastMouse.x;
       const dy = e.clientY - lastMouse.y;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDragging.current = true;
-      globe.rotation.y += dx * 0.005;
-      globe.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, globe.rotation.x + dy * 0.005));
-      rotVel = { x: dy * 0.002, y: dx * 0.002 };
+      globe.rotation.y += dx * 0.003;
+      globe.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, globe.rotation.x + dy * 0.003));
+      rotVel = { x: dy * 0.001, y: dx * 0.001 };
       lastMouse = { x: e.clientX, y: e.clientY };
       autoRotate.current = false;
     }
@@ -156,23 +162,51 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
       if (!isDragging.current) handleGlobeClick(e);
     }
 
+    let lastPinchDist = null;
+
     function onTouchStart(e) {
+      if (e.touches.length === 2) {
+        lastPinchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        mouseDown = false;
+        return;
+      }
       const t = e.touches[0];
       mouseDown = true;
       isDragging.current = false;
       lastMouse = { x: t.clientX, y: t.clientY };
+      rotVel = { x: 0, y: 0 };
     }
     function onTouchMove(e) {
+      e.preventDefault();
+      if (e.touches.length === 2) {
+        // Pinch-to-zoom
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        if (lastPinchDist !== null) {
+          camera.position.z = Math.max(2.5, Math.min(9, camera.position.z + (lastPinchDist - dist) * 0.02));
+        }
+        lastPinchDist = dist;
+        return;
+      }
+      lastPinchDist = null;
+      if (!mouseDown) return;
       const t = e.touches[0];
       const dx = t.clientX - lastMouse.x;
       const dy = t.clientY - lastMouse.y;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDragging.current = true;
-      globe.rotation.y += dx * 0.005;
-      globe.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, globe.rotation.x + dy * 0.005));
+      globe.rotation.y += dx * 0.003;
+      globe.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, globe.rotation.x + dy * 0.003));
+      rotVel = { x: dy * 0.001, y: dx * 0.001 };
       lastMouse = { x: t.clientX, y: t.clientY };
       autoRotate.current = false;
     }
     function onTouchEnd(e) {
+      lastPinchDist = null;
       mouseDown = false;
       if (!isDragging.current && e.changedTouches.length > 0) {
         handleGlobeClick(e.changedTouches[0]);
@@ -201,22 +235,22 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     mount.addEventListener('mousedown',  onMouseDown);
     mount.addEventListener('mousemove',  onMouseMove);
     mount.addEventListener('mouseup',    onMouseUp);
-    mount.addEventListener('touchstart', onTouchStart, { passive: true });
-    mount.addEventListener('touchmove',  onTouchMove,  { passive: true });
-    mount.addEventListener('touchend',   onTouchEnd);
+    mount.addEventListener('touchstart', onTouchStart, { passive: false });
+    mount.addEventListener('touchmove',  onTouchMove,  { passive: false });
+    mount.addEventListener('touchend',   onTouchEnd,   { passive: true });
     mount.addEventListener('wheel',      onWheel,      { passive: false });
 
     // Animation loop
     function animate() {
       frameRef.current = requestAnimationFrame(animate);
       if (autoRotate.current) {
-        globe.rotation.y += 0.0015;
+        globe.rotation.y += 0.0005;
       } else {
-        // Damping
+        // Damping — 0.92 decays spin quickly so it doesn't feel uncontrolled
         globe.rotation.y += rotVel.y;
         globe.rotation.x += rotVel.x;
-        rotVel.x *= 0.95;
-        rotVel.y *= 0.95;
+        rotVel.x *= 0.92;
+        rotVel.y *= 0.92;
         if (Math.abs(rotVel.x) < 0.0001 && Math.abs(rotVel.y) < 0.0001) autoRotate.current = true;
       }
       renderer.render(scene, camera);

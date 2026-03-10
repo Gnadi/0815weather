@@ -143,6 +143,7 @@ html, body, #root {
   height: 100%;
   cursor: grab;
   position: relative;
+  touch-action: none; /* let JS handle all touch events — needed for pinch-to-zoom */
 }
 .globe-mount:active { cursor: grabbing; }
 .globe-mount canvas { display: block; width: 100% !important; height: 100% !important; }
@@ -418,3 +419,60 @@ html, body, #root {
 
 /* ── Scrollbar for panel ───────────────────────────────────────── */
 * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+/* ── Mobile layout (≤ 768px) ───────────────────────────────────── */
+@media (max-width: 768px) {
+  html, body, #root { overflow: hidden; }
+
+  .topbar {
+    padding: 10px 14px;
+    gap: 10px;
+    flex-wrap: nowrap;
+  }
+  .searchbar-wrap {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+  .datetime { display: none; } /* hide clock to save space on small screens */
+
+  .main-content {
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Globe sits in the top ~45% of the remaining height */
+  .globe-area {
+    flex: 0 0 42vh;
+    min-height: 200px;
+    width: 100%;
+  }
+
+  /* Controls shrink and stay inside the globe area */
+  .globe-controls {
+    bottom: 10px;
+    padding: 6px 10px;
+    gap: 2px;
+  }
+  .ctrl-btn { padding: 6px; }
+
+  /* Weather panel fills the rest, scrollable */
+  .weather-panel {
+    width: 100%;
+    flex: 1;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding: 16px 16px 8px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Slightly compact typography */
+  .panel-city  { font-size: 22px; }
+  .panel-temp  { font-size: 52px; }
+  .stat-value  { font-size: 17px; }
+
+  /* City labels can overlap on small screens — reduce count via JS,
+     but at minimum ensure text stays legible */
+  .city-label-text { font-size: 10px; }
+}
