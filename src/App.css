@@ -207,6 +207,59 @@ html, body, #root {
 .ctrl-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
 .ctrl-divider { border-left: 1px solid var(--border); margin-left: 4px; padding-left: 12px; border-radius: 0; }
 
+/* Layers button — stacked icon + mode label */
+.ctrl-layers-btn {
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 8px;
+  min-width: 52px;
+  border-radius: 8px;
+}
+.ctrl-layers-btn.active { color: var(--accent); }
+.ctrl-layer-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--subtext);
+}
+.ctrl-layers-btn.active .ctrl-layer-tag { color: var(--accent); }
+
+/* ── City label marker visual hierarchy ────────────────────────── */
+/* Selected location — yellow glow (highest priority) */
+.city-label[data-type="selected"] .city-label-dot {
+  width: 8px; height: 8px;
+  background: #ffdd00;
+  box-shadow: 0 0 6px #ffdd00, 0 0 14px #ffaa00;
+}
+.city-label[data-type="selected"] .city-label-text {
+  color: #ffee88;
+  font-weight: 700;
+}
+
+/* Capital cities — cyan glow dot */
+.city-label[data-type="capital"] .city-label-dot {
+  width: 6px; height: 6px;
+  background: var(--accent);
+  box-shadow: 0 0 5px var(--accent), 0 0 10px rgba(0,200,255,0.4);
+}
+.city-label[data-type="capital"] .city-label-text {
+  color: rgba(255,255,255,0.95);
+  font-weight: 600;
+}
+
+/* Major non-capital cities — smaller subdued dot */
+.city-label[data-type="city"] .city-label-dot {
+  width: 5px; height: 5px;
+  background: rgba(255,255,255,0.6);
+  box-shadow: 0 0 3px rgba(255,255,255,0.3);
+}
+.city-label[data-type="city"] .city-label-text {
+  color: rgba(255,255,255,0.70);
+  font-weight: 500;
+}
+
 /* ── Weather panel ─────────────────────────────────────────────── */
 .weather-panel {
   width: 340px;

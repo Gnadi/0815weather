@@ -21,6 +21,7 @@ export default function App() {
   const { favourites, addFavourite, removeFavourite, isFavourite } = useFavourites();
   const [gameMode, setGameMode]     = useState(false);
   const [gameModeKey, setGameModeKey] = useState(0);
+  const [layerMode, setLayerMode]   = useState(3); // 0=borders 1=capitals 2=cities 3=plain
 
   // Load weather for a location
   const loadWeather = useCallback(async (lat, lon, city, country) => {
@@ -69,11 +70,6 @@ export default function App() {
     loadWeather(fav.lat, fav.lon, fav.city, fav.country);
   }
 
-  const cityLabels = [
-    ...tickerCities,
-    location.city ? { ...location, lat: location.lat, lon: location.lon } : null,
-  ].filter(Boolean);
-
   return (
     <div className="app">
       {/* Top bar */}
@@ -100,13 +96,15 @@ export default function App() {
             ref={globeRef}
             onLocationSelect={onLocationSelect}
             selectedLocation={location}
-            cityLabels={cityLabels}
+            tickerCities={tickerCities}
+            layerMode={layerMode}
           />
           <GlobeControls
             onZoomIn={() => globeRef.current?.zoomIn()}
             onZoomOut={() => globeRef.current?.zoomOut()}
             onReset={() => globeRef.current?.reset()}
-            onToggleLayers={() => {}}
+            layerMode={layerMode}
+            onToggleLayers={() => setLayerMode(m => (m + 1) % 4)}
           />
         </div>
         {gameMode ? (
