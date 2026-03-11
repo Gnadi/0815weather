@@ -84,12 +84,6 @@ export default function LandingPage({ onExplore }) {
             <div className="weather-card-sub">Clear Skies • Humidity 45%</div>
           </div>
 
-          <div className="weather-card weather-card--london">
-            <div className="weather-card-city">LONDON</div>
-            <div className="weather-card-temp-only">15°C</div>
-            <div className="weather-card-sub">Light Rain • Humidity 82%</div>
-          </div>
-
           <div className="weather-card weather-card--newyork">
             <div className="weather-card-city">NEW YORK</div>
             <div className="weather-card-row">
