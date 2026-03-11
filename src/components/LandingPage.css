@@ -184,7 +184,7 @@
 }
 
 .weather-card--newyork {
-  top: 110px;
+  top: 70px;
   right: -190px;
 }
 
@@ -511,7 +511,7 @@
   }
 
   .hero-text {
-    margin-top: -250px;
+    margin-top: -210px;
   }
 
   .weather-card--tokyo {
@@ -565,7 +565,7 @@
   }
 
   .hero-text {
-    margin-top: -200px;
+    margin-top: -160px;
   }
 
   .weather-card--newyork {
