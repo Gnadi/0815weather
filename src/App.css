@@ -20,15 +20,15 @@ html, body, #root {
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  overflow: hidden;
 }
 
-/* ── App Layout ────────────────────────────────────────────────── */
+/* ── App Layout (globe view) ───────────────────────────────────── */
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
   width: 100vw;
+  overflow: hidden;
   background: radial-gradient(ellipse at 30% 40%, #0d1f4a 0%, #080d1a 60%);
 }
 
@@ -630,7 +630,7 @@ html, body, #root {
 
 /* ── Mobile layout (≤ 768px) ───────────────────────────────────── */
 @media (max-width: 768px) {
-  html, body, #root { overflow: hidden; }
+  .app { overflow: hidden; }
 
   .topbar {
     padding: 10px 14px;
