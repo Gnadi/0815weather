@@ -321,7 +321,7 @@ const Globe = forwardRef(function Globe(
       const y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
-      const hits = raycaster.intersectObject(globe);
+      const hits = raycaster.intersectObject(globe, false);
       // Use UV coordinates from the sphere geometry — direct, no matrix inversion needed.
       // Three.js SphereGeometry UV convention: u=0→lon -180°, u=1→lon +180°; v=0→lat -90° (south pole), v=1→lat +90° (north pole)
       if (hits.length > 0 && hits[0].uv) {
