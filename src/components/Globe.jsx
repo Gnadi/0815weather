@@ -144,7 +144,6 @@ const Globe = forwardRef(function Globe(
   const globeRef    = useRef(null);
   const rendererRef = useRef(null);
   const frameRef    = useRef(null);
-  const pinRef      = useRef(null);
 
   // Refs that the RAF loop reads without triggering re-renders
   const layerModeRef     = useRef(layerMode);
@@ -229,15 +228,6 @@ const Globe = forwardRef(function Globe(
       new THREE.SphereGeometry(EARTH_RADIUS * 1.06, 48, 48),
       new THREE.MeshBasicMaterial({ color: 0x2288ff, transparent: true, opacity: 0.04, side: THREE.BackSide }),
     ));
-
-    // Location pin
-    const pin = new THREE.Mesh(
-      new THREE.SphereGeometry(0.035, 12, 12),
-      new THREE.MeshBasicMaterial({ color: 0xffdd00 }),
-    );
-    pin.visible = false;
-    globe.add(pin);
-    pinRef.current = pin;
 
     // ── 2D label canvas overlay ─────────────────────────────────
     const labelCanvas = document.createElement('canvas');
@@ -417,14 +407,6 @@ const Globe = forwardRef(function Globe(
       })
       .catch(() => { borderLoadingRef.current = false; });
   }, [layerMode]);
-
-  // ── Update location pin ───────────────────────────────────────
-  useEffect(() => {
-    const pin = pinRef.current;
-    if (!pin || !selectedLocation) return;
-    latLonToVec3(selectedLocation.lat, selectedLocation.lon, EARTH_RADIUS * 1.015, pin.position);
-    pin.visible = true;
-  }, [selectedLocation]);
 
   return (
     <div className="globe-mount" ref={mountRef}>
