@@ -326,9 +326,11 @@ const Globe = forwardRef(function Globe(
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
       const hits = raycaster.intersectObject(globe);
-      if (hits.length > 0) {
-        const local = hits[0].point.clone().applyMatrix4(_mat4.copy(globe.matrixWorld).invert());
-        const { lat, lon } = vec3ToLatLon(local, EARTH_RADIUS);
+      // Use UV coordinates from the sphere geometry — direct, no matrix inversion needed.
+      // Three.js SphereGeometry UV convention: u=0→lon -180°, u=1→lon +180°; v=0→lat 90°, v=1→lat -90°
+      if (hits.length > 0 && hits[0].uv) {
+        const lat = 90  - hits[0].uv.y * 180;
+        const lon = hits[0].uv.x * 360 - 180;
         onLocationSelect(lat, lon);
       }
     }
@@ -451,21 +453,24 @@ function CityLabels({ globeRef, cameraRef, mountRef, selectedLocation, cityLabel
     if (!globe || !camera || !mount) return;
 
     let frameId;
+    // Local vectors — never touch the module-level shared ones inside this RAF
+    const _pos    = new THREE.Vector3();
+    const _camDir = new THREE.Vector3();
     function update() {
       frameId = requestAnimationFrame(update);
       const labels = mount.querySelectorAll('.city-label');
       const rect   = mount.getBoundingClientRect();
       labels.forEach(el => {
         const lat = +el.dataset.lat, lon = +el.dataset.lon;
-        latLonToVec3(lat, lon, EARTH_RADIUS * 1.06, _v3a);
-        _v3a.applyMatrix4(globe.matrixWorld);
+        latLonToVec3(lat, lon, EARTH_RADIUS * 1.06, _pos);
+        _pos.applyMatrix4(globe.matrixWorld);
 
-        const camDir = _v3b.copy(_v3a).sub(camera.position).normalize();
-        if (_v3a.clone().normalize().dot(camDir) > 0) { el.style.opacity = '0'; return; }
+        _camDir.copy(_pos).sub(camera.position).normalize();
+        if (_pos.clone().normalize().dot(_camDir) > 0) { el.style.opacity = '0'; return; }
 
-        _v3a.project(camera);
-        el.style.left    = `${(_v3a.x * 0.5 + 0.5) * rect.width}px`;
-        el.style.top     = `${(1 - (_v3a.y * 0.5 + 0.5)) * rect.height}px`;
+        _pos.project(camera);
+        el.style.left    = `${(_pos.x * 0.5 + 0.5) * rect.width}px`;
+        el.style.top     = `${(1 - (_pos.y * 0.5 + 0.5)) * rect.height}px`;
         el.style.opacity = '1';
       });
     }
