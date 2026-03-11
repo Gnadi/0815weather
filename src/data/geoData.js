@@ -1,5 +1,16 @@
+// Pre-compute unit-sphere (nx,ny,nz) positions so we never call sin/cos per frame.
+// Three.js coordinate convention: x=-sin(phi)cos(theta), y=cos(phi), z=sin(phi)sin(theta)
+const DEG2RAD = Math.PI / 180;
+function precompute(list) {
+  return list.map(c => {
+    const phi   = (90 - c.lat) * DEG2RAD;
+    const theta = (c.lon + 180) * DEG2RAD;
+    return { ...c, nx: -Math.sin(phi) * Math.cos(theta), ny: Math.cos(phi), nz: Math.sin(phi) * Math.sin(theta) };
+  });
+}
+
 // World capitals (lat, lon, name, country)
-export const CAPITALS = [
+const _CAPITALS_RAW = [
   // Europe
   { lat: 51.5074, lon: -0.1278, name: 'London', country: 'UK' },
   { lat: 48.8566, lon:  2.3522, name: 'Paris', country: 'France' },
@@ -199,7 +210,7 @@ export const CAPITALS = [
 ];
 
 // Major non-capital cities (only shown when zoomed in)
-export const BIG_CITIES = [
+const _BIG_CITIES_RAW = [
   // Asia
   { lat: 31.2304, lon: 121.4737, name: 'Shanghai', country: 'China' },
   { lat: 22.3193, lon: 114.1694, name: 'Hong Kong', country: 'China' },
@@ -287,3 +298,7 @@ export const BIG_CITIES = [
   { lat: -31.9505, lon: 115.8605, name: 'Perth', country: 'Australia' },
   { lat: -36.8485, lon: 174.7633, name: 'Auckland', country: 'New Zealand' },
 ];
+
+// Exported arrays with pre-computed nx/ny/nz — never compute sin/cos at runtime
+export const CAPITALS  = precompute(_CAPITALS_RAW);
+export const BIG_CITIES = precompute(_BIG_CITIES_RAW);
