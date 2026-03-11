@@ -1,6 +1,7 @@
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import * as THREE from 'three';
 import { CAPITALS, BIG_CITIES } from '../data/geoData';
+import { uvToLatLon, latLonToXYZ } from '../utils/coordinates';
 
 const EARTH_RADIUS   = 2;
 const EARTH_TEXTURE  = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
@@ -20,15 +21,10 @@ const _v3a  = new THREE.Vector3();
 const _v3b  = new THREE.Vector3();
 const _mat4 = new THREE.Matrix4();
 
-// Lat/lon → 3D point on sphere surface
+// Lat/lon → 3D point on sphere surface (thin Three.js wrapper around pure latLonToXYZ)
 function latLonToVec3(lat, lon, radius, out = _v3a) {
-  const phi   = (90 - lat) * (Math.PI / 180);
-  const theta = (lon + 180) * (Math.PI / 180);
-  out.set(
-    -radius * Math.sin(phi) * Math.cos(theta),
-     radius * Math.cos(phi),
-     radius * Math.sin(phi) * Math.sin(theta),
-  );
+  const { x, y, z } = latLonToXYZ(lat, lon, radius);
+  out.set(x, y, z);
   return out;
 }
 
@@ -327,9 +323,9 @@ const Globe = forwardRef(function Globe(
       raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
       const hits = raycaster.intersectObject(globe);
       // Use UV coordinates from the sphere geometry — direct, no matrix inversion needed.
-      // Three.js SphereGeometry UV convention: u=0→lon -180°, u=1→lon +180°; v=0→lat 90°, v=1→lat -90°
+      // Three.js SphereGeometry UV convention: u=0→lon -180°, u=1→lon +180°; v=0→lat -90° (south pole), v=1→lat +90° (north pole)
       if (hits.length > 0 && hits[0].uv) {
-        const lat = 90  - hits[0].uv.y * 180;
+        const lat = hits[0].uv.y * 180 - 90;
         const lon = hits[0].uv.x * 360 - 180;
         onLocationSelect(lat, lon);
       }
