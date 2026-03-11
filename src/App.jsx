@@ -6,12 +6,14 @@ import SearchBar from './components/SearchBar';
 import DateTime from './components/DateTime';
 import WeatherTicker from './components/WeatherTicker';
 import GlobeControls from './components/GlobeControls';
+import LandingPage from './components/LandingPage';
 import { fetchWeather, reverseGeocode, TICKER_CITIES } from './utils/api';
 import { useFavourites } from './hooks/useFavourites';
 
 const DEFAULT_LOCATION = { lat: 51.5074, lon: -0.1278, city: 'London', country: 'United Kingdom' };
 
 export default function App() {
+  const [showLanding, setShowLanding] = useState(true);
   const [location, setLocation]   = useState(DEFAULT_LOCATION);
   const [weather,  setWeather]    = useState(null);
   const [loading,  setLoading]    = useState(true);
@@ -83,6 +85,10 @@ export default function App() {
     ...tickerCities,
     location.city ? { ...location, lat: location.lat, lon: location.lon } : null,
   ].filter(Boolean);
+
+  if (showLanding) {
+    return <LandingPage onExplore={() => setShowLanding(false)} />;
+  }
 
   return (
     <div className="app">
