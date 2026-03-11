@@ -22,6 +22,16 @@ export default function App() {
   const [gameMode, setGameMode]     = useState(false);
   const [gameModeKey, setGameModeKey] = useState(0);
 
+  // Layer toggle: cycles through plain → borders → capitals → cities
+  const LAYER_CYCLE = ['plain', 'borders', 'capitals', 'cities'];
+  const [layerMode, setLayerMode] = useState('plain');
+  function cycleLayer() {
+    setLayerMode(cur => {
+      const idx = LAYER_CYCLE.indexOf(cur);
+      return LAYER_CYCLE[(idx + 1) % LAYER_CYCLE.length];
+    });
+  }
+
   // Load weather for a location
   const loadWeather = useCallback(async (lat, lon, city, country) => {
     setLoading(true);
@@ -101,12 +111,14 @@ export default function App() {
             onLocationSelect={onLocationSelect}
             selectedLocation={location}
             cityLabels={cityLabels}
+            layerMode={layerMode}
           />
           <GlobeControls
             onZoomIn={() => globeRef.current?.zoomIn()}
             onZoomOut={() => globeRef.current?.zoomOut()}
             onReset={() => globeRef.current?.reset()}
-            onToggleLayers={() => {}}
+            onToggleLayers={cycleLayer}
+            layerMode={layerMode}
           />
         </div>
         {gameMode ? (

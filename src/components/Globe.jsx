@@ -1,9 +1,15 @@
-import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
 import * as THREE from 'three';
+import { CAPITALS, BIG_CITIES } from '../data/geoData';
 
 const EARTH_RADIUS = 2;
 const EARTH_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
 const EARTH_BUMP    = 'https://unpkg.com/three-globe/example/img/earth-topology.png';
+// Simplified world borders GeoJSON (Natural Earth 110m)
+const BORDERS_URL   = 'https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson';
+
+// Zoom threshold: camera.position.z below this reveals big cities
+const BIG_CITY_ZOOM_THRESHOLD = 4.2;
 
 // Convert lat/lon to 3D point on sphere (accounting for Three.js coordinate system)
 function latLonToVec3(lat, lon, radius) {
@@ -24,7 +30,36 @@ function vec3ToLatLon(point, radius) {
   return { lat, lon: lon < -180 ? lon + 360 : lon };
 }
 
-const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, cityLabels }, ref) {
+// Build Three.js LineSegments geometry from world GeoJSON
+function buildBorderGeometry(geojson) {
+  const positions = [];
+
+  function addRing(coords) {
+    for (let i = 0; i < coords.length - 1; i++) {
+      const [lon1, lat1] = coords[i];
+      const [lon2, lat2] = coords[i + 1];
+      const p1 = latLonToVec3(lat1, lon1, EARTH_RADIUS * 1.001);
+      const p2 = latLonToVec3(lat2, lon2, EARTH_RADIUS * 1.001);
+      positions.push(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z);
+    }
+  }
+
+  geojson.features.forEach(f => {
+    const g = f.geometry;
+    if (!g) return;
+    if (g.type === 'Polygon') {
+      g.coordinates.forEach(addRing);
+    } else if (g.type === 'MultiPolygon') {
+      g.coordinates.forEach(poly => poly.forEach(addRing));
+    }
+  });
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  return geom;
+}
+
+const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, cityLabels, layerMode }, ref) {
   const mountRef    = useRef(null);
   const sceneRef    = useRef(null);
   const cameraRef   = useRef(null);
@@ -34,6 +69,13 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
   const frameRef    = useRef(null);
   const isDragging  = useRef(false);
 
+  // Layer refs — persist across renders without causing re-renders
+  const borderLinesRef  = useRef(null);   // Three.js LineSegments mesh
+  const borderLoadedRef = useRef(false);  // whether GeoJSON was fetched
+  const borderLoadingRef = useRef(false); // prevent duplicate fetches
+
+  // Expose camera z so GlobeLayerLabels can check zoom level
+  const cameraZRef = useRef(5);
 
   useImperativeHandle(ref, () => ({
     zoomIn()  { cameraRef.current && (cameraRef.current.position.z = Math.max(cameraRef.current.position.z - 0.5, 2.5)); },
@@ -245,6 +287,8 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
       globe.rotation.x += rotVel.x;
       rotVel.x *= 0.92;
       rotVel.y *= 0.92;
+      // Track zoom for label visibility
+      cameraZRef.current = camera.position.z;
       renderer.render(scene, camera);
     }
     animate();
@@ -274,6 +318,51 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     };
   }, []);
 
+  // ── Country border lines ──────────────────────────────────────────
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!globe) return;
+
+    const needsBorders = layerMode === 'borders';
+
+    if (!needsBorders) {
+      // Hide existing borders
+      if (borderLinesRef.current) borderLinesRef.current.visible = false;
+      return;
+    }
+
+    // Show if already built
+    if (borderLinesRef.current) {
+      borderLinesRef.current.visible = true;
+      return;
+    }
+
+    // Prevent duplicate in-flight fetches
+    if (borderLoadingRef.current) return;
+    borderLoadingRef.current = true;
+
+    fetch(BORDERS_URL)
+      .then(r => r.json())
+      .then(data => {
+        const geom = buildBorderGeometry(data);
+        const mat  = new THREE.LineBasicMaterial({
+          color: 0x4488cc,
+          opacity: 0.55,
+          transparent: true,
+        });
+        const lines = new THREE.LineSegments(geom, mat);
+        // Add as child of globe so it rotates with it
+        globe.add(lines);
+        borderLinesRef.current = lines;
+        borderLoadingRef.current = false;
+        borderLoadedRef.current  = true;
+      })
+      .catch(err => {
+        console.warn('Failed to load borders GeoJSON:', err);
+        borderLoadingRef.current = false;
+      });
+  }, [layerMode]);
+
   // Update pin when selectedLocation changes
   useEffect(() => {
     if (!pinRef.current || !globeRef.current || !selectedLocation) return;
@@ -284,30 +373,32 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     pinRef.current.visible = true;
   }, [selectedLocation]);
 
-  // City labels rendered as HTML overlays
-  const labelEls = cityLabels?.map((c, i) => {
-    if (!globeRef.current || !cameraRef.current || !rendererRef.current) return null;
-    return null; // Labels are updated in useEffect below
-  });
-
   return (
     <div className="globe-mount" ref={mountRef}>
-      {/* City label HTML overlay - rendered via absolute positioning via separate effect */}
+      {/* Existing city labels (selected + ticker) */}
       <CityLabels
         globeRef={globeRef}
         cameraRef={cameraRef}
-        rendererRef={rendererRef}
         mountRef={mountRef}
         selectedLocation={selectedLocation}
         cityLabels={cityLabels}
       />
+      {/* Layer overlay labels (capitals / big cities) */}
+      {(layerMode === 'capitals' || layerMode === 'cities') && (
+        <GlobeLayerLabels
+          globeRef={globeRef}
+          cameraRef={cameraRef}
+          mountRef={mountRef}
+          cameraZRef={cameraZRef}
+          layerMode={layerMode}
+        />
+      )}
     </div>
   );
 });
 
+// ── Existing CityLabels component (unchanged) ─────────────────────
 function CityLabels({ globeRef, cameraRef, mountRef, selectedLocation, cityLabels }) {
-  const labelsRef = useRef([]);
-
   useEffect(() => {
     if (!selectedLocation) return;
 
@@ -372,6 +463,91 @@ function CityLabels({ globeRef, cameraRef, mountRef, selectedLocation, cityLabel
         </div>
       ))}
     </>
+  );
+}
+
+// ── Layer labels: capitals and big cities ─────────────────────────
+function GlobeLayerLabels({ globeRef, cameraRef, mountRef, cameraZRef, layerMode }) {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const globe  = globeRef.current;
+    const camera = cameraRef.current;
+    const mount  = mountRef.current;
+    const container = containerRef.current;
+    if (!globe || !camera || !mount || !container) return;
+
+    let frameId;
+    function update() {
+      frameId = requestAnimationFrame(update);
+
+      const isZoomedIn = cameraZRef.current < BIG_CITY_ZOOM_THRESHOLD;
+      const labels = container.querySelectorAll('.layer-label');
+
+      labels.forEach(el => {
+        const lat = parseFloat(el.dataset.lat);
+        const lon = parseFloat(el.dataset.lon);
+        const isBigCity = el.dataset.bigcity === 'true';
+
+        // Hide big cities when not zoomed in enough (performance + UX)
+        if (isBigCity && !isZoomedIn) {
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+          return;
+        }
+
+        const pos = latLonToVec3(lat, lon, EARTH_RADIUS * 1.04);
+        const worldPos = pos.clone().applyMatrix4(globe.matrixWorld);
+
+        // Back-face cull: hide labels on the far side of the globe
+        const camDir = worldPos.clone().sub(camera.position).normalize();
+        const surfaceNormal = worldPos.clone().normalize();
+        const dot = surfaceNormal.dot(camDir);
+        if (dot > 0.1) {
+          el.style.opacity = '0';
+          return;
+        }
+
+        // Fade labels approaching the horizon edge
+        const fadeStart = -0.15;
+        const opacity = dot < fadeStart ? 1 : (dot - 0.1) / (fadeStart - 0.1);
+
+        const projected = worldPos.clone().project(camera);
+        const rect = mount.getBoundingClientRect();
+        const x = (projected.x * 0.5 + 0.5) * rect.width;
+        const y = (1 - (projected.y * 0.5 + 0.5)) * rect.height;
+        el.style.left    = `${x}px`;
+        el.style.top     = `${y}px`;
+        el.style.opacity = String(Math.max(0, Math.min(1, opacity)));
+      });
+    }
+    update();
+    return () => cancelAnimationFrame(frameId);
+  }, [layerMode]);
+
+  const showBigCities = layerMode === 'cities';
+  const cities = showBigCities ? [...CAPITALS, ...BIG_CITIES] : CAPITALS;
+
+  return (
+    <div ref={containerRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      {cities.map((c, i) => {
+        const isBigCity = i >= CAPITALS.length;
+        return (
+          <div
+            key={`layer-${i}`}
+            className={`layer-label ${isBigCity ? 'layer-label--city' : 'layer-label--capital'}`}
+            data-lat={c.lat}
+            data-lon={c.lon}
+            data-bigcity={String(isBigCity)}
+            style={{ opacity: 0 }}
+          >
+            {!isBigCity && <span className="layer-label-dot layer-label-dot--capital" />}
+            {isBigCity  && <span className="layer-label-dot layer-label-dot--city" />}
+            <span className="layer-label-text">{c.name}</span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

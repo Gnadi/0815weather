@@ -207,6 +207,63 @@ html, body, #root {
 .ctrl-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
 .ctrl-divider { border-left: 1px solid var(--border); margin-left: 4px; padding-left: 12px; border-radius: 0; }
 
+/* Layer button — active state */
+.ctrl-layers { position: relative; gap: 5px; border-radius: 20px; padding: 8px 10px; }
+.ctrl-layers--active { color: var(--accent) !important; }
+.ctrl-layers--active:hover { background: rgba(0,200,255,0.1) !important; }
+.ctrl-layer-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--accent);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* ── Globe layer labels (capitals / cities) ───────────────────── */
+.layer-label {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+.layer-label-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.layer-label-dot--capital {
+  background: #ffcc44;
+  box-shadow: 0 0 5px rgba(255,200,60,0.8);
+}
+.layer-label-dot--city {
+  background: rgba(255,255,255,0.65);
+  box-shadow: 0 0 4px rgba(255,255,255,0.4);
+}
+.layer-label-text {
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 0 6px #000, 0 1px 3px rgba(0,0,0,0.95);
+  background: rgba(0,0,0,0.35);
+  padding: 1px 5px;
+  border-radius: 3px;
+  backdrop-filter: blur(3px);
+}
+.layer-label--capital .layer-label-text {
+  font-size: 10px;
+  color: #ffe87a;
+}
+.layer-label--city .layer-label-text {
+  font-size: 9px;
+  color: rgba(255,255,255,0.85);
+}
+
 /* ── Weather panel ─────────────────────────────────────────────── */
 .weather-panel {
   width: 340px;
