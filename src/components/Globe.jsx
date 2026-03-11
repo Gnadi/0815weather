@@ -33,7 +33,7 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
   const pinRef      = useRef(null);
   const frameRef    = useRef(null);
   const isDragging  = useRef(false);
-  const autoRotate  = useRef(true);
+
 
   useImperativeHandle(ref, () => ({
     zoomIn()  { cameraRef.current && (cameraRef.current.position.z = Math.max(cameraRef.current.position.z - 0.5, 2.5)); },
@@ -41,7 +41,6 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     reset()   {
       if (globeRef.current)  { globeRef.current.rotation.y = 0; }
       if (cameraRef.current) { cameraRef.current.position.set(0, 0, 5); }
-      autoRotate.current = true;
     },
   }));
 
@@ -153,7 +152,6 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
       globe.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, globe.rotation.x + dy * 0.003));
       rotVel = { x: dy * 0.001, y: dx * 0.001 };
       lastMouse = { x: e.clientX, y: e.clientY };
-      autoRotate.current = false;
     }
 
     function onMouseUp(e) {
@@ -203,7 +201,6 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
       globe.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, globe.rotation.x + dy * 0.003));
       rotVel = { x: dy * 0.001, y: dx * 0.001 };
       lastMouse = { x: t.clientX, y: t.clientY };
-      autoRotate.current = false;
     }
     function onTouchEnd(e) {
       lastPinchDist = null;
@@ -243,16 +240,11 @@ const Globe = forwardRef(function Globe({ onLocationSelect, selectedLocation, ci
     // Animation loop
     function animate() {
       frameRef.current = requestAnimationFrame(animate);
-      if (autoRotate.current) {
-        globe.rotation.y += 0.0005;
-      } else {
-        // Damping — 0.92 decays spin quickly so it doesn't feel uncontrolled
-        globe.rotation.y += rotVel.y;
-        globe.rotation.x += rotVel.x;
-        rotVel.x *= 0.92;
-        rotVel.y *= 0.92;
-        if (Math.abs(rotVel.x) < 0.0001 && Math.abs(rotVel.y) < 0.0001) autoRotate.current = true;
-      }
+      // Damping — 0.92 decays spin quickly so it doesn't feel uncontrolled
+      globe.rotation.y += rotVel.y;
+      globe.rotation.x += rotVel.x;
+      rotVel.x *= 0.92;
+      rotVel.y *= 0.92;
       renderer.render(scene, camera);
     }
     animate();
