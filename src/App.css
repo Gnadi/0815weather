@@ -207,6 +207,19 @@ html, body, #root {
 .ctrl-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
 .ctrl-divider { border-left: 1px solid var(--border); margin-left: 4px; padding-left: 12px; border-radius: 0; }
 
+/* Layer button — active state */
+.ctrl-layers { position: relative; gap: 5px; border-radius: 20px; padding: 8px 10px; }
+.ctrl-layers--active { color: var(--accent) !important; }
+.ctrl-layers--active:hover { background: rgba(0,200,255,0.1) !important; }
+.ctrl-layer-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--accent);
+  white-space: nowrap;
+  line-height: 1;
+}
+
 /* ── Weather panel ─────────────────────────────────────────────── */
 .weather-panel {
   width: 340px;
