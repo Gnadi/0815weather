@@ -224,13 +224,13 @@
 /* ── Hero text block ─────────────────────────────────────── */
 .hero-text {
   text-align: center;
-  margin-top: -240px;
+  margin-top: -180px;
   position: relative;
   z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+  gap: 0;
   width: 100%;
   padding-bottom: 60px;
 }
@@ -253,12 +253,13 @@
   color: rgba(255, 255, 255, 0.6);
   line-height: 1.65;
   max-width: 560px;
+  margin-top: 52px;
 }
 
 .hero-ctas {
   display: flex;
   gap: 14px;
-  margin-top: 8px;
+  margin-top: 24px;
 }
 
 .btn-primary {
