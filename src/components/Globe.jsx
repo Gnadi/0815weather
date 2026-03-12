@@ -2,6 +2,12 @@ import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import * as THREE from 'three';
 import { CAPITALS, BIG_CITIES } from '../data/geoData';
 import { uvToLatLon, latLonToXYZ } from '../utils/coordinates';
+import { fetchWeatherGrid } from '../utils/api';
+import {
+  bilinearInterpolate,
+  buildTemperatureCanvas,
+  buildRainCanvas,
+} from '../utils/weatherOverlay';
 
 const EARTH_RADIUS   = 2;
 const EARTH_TEXTURE  = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
@@ -15,6 +21,11 @@ const FULL_CAP_ZOOM_THRESHOLD = 5.8;   // show all capitals below this
 // Detect mobile once — used for quality scaling
 const IS_MOBILE = typeof window !== 'undefined' &&
   (window.innerWidth <= 768 || navigator.maxTouchPoints > 0);
+
+// ── Weather overlay constants ─────────────────────────────────────────────────
+const OVERLAY_TEX_W   = 360;
+const OVERLAY_TEX_H   = 180;
+const DEG2RAD         = Math.PI / 180;
 
 // Reusable Three.js objects — allocated once, never in hot path
 const _v3a  = new THREE.Vector3();
@@ -136,7 +147,7 @@ function _drawCity(ctx, W, H, city, cx, cy, cz, R, globeMatrix, camera, isBigCit
 
 // ─────────────────────────────────────────────────────────────────
 const Globe = forwardRef(function Globe(
-  { onLocationSelect, selectedLocation, cityLabels, layerMode },
+  { onLocationSelect, selectedLocation, cityLabels, layerMode, weatherLayer, onWeatherLoading },
   ref,
 ) {
   const mountRef    = useRef(null);
@@ -147,6 +158,7 @@ const Globe = forwardRef(function Globe(
 
   // Refs that the RAF loop reads without triggering re-renders
   const layerModeRef     = useRef(layerMode);
+  const weatherLayerRef  = useRef(weatherLayer);
   const labelCanvasRef   = useRef(null);
   const labelCtxRef      = useRef(null);
 
@@ -154,8 +166,20 @@ const Globe = forwardRef(function Globe(
   const borderLinesRef   = useRef(null);
   const borderLoadingRef = useRef(false);
 
+  // Weather overlay state
+  const weatherOverlayRef    = useRef(null);   // THREE.Mesh (temp sphere)
+  const weatherTexRef        = useRef(null);   // THREE.CanvasTexture (temp)
+  const weatherTexCanvasRef  = useRef(null);   // off-screen canvas (temp)
+  const rainOverlayRef       = useRef(null);   // THREE.Mesh (rain sphere)
+  const rainTexRef           = useRef(null);   // THREE.CanvasTexture (rain)
+  const rainTexCanvasRef     = useRef(null);   // off-screen canvas (rain)
+
+  const weatherGridRef       = useRef(null);   // fetched grid data
+  const weatherFetchedAtRef  = useRef(0);      // timestamp for 30-min refresh
+
   // Keep layerModeRef in sync with prop
   useEffect(() => { layerModeRef.current = layerMode; }, [layerMode]);
+  useEffect(() => { weatherLayerRef.current = weatherLayer; }, [weatherLayer]);
 
   useImperativeHandle(ref, () => ({
     zoomIn()  { if (cameraRef.current) cameraRef.current.position.z = Math.max(cameraRef.current.position.z - 0.5, 2.5); },
@@ -218,6 +242,40 @@ const Globe = forwardRef(function Globe(
     );
     scene.add(globe);
     globeRef.current = globe;
+
+    // ── Weather overlays (temperature + rain textures) ───────────────
+    function makeOverlayCanvas() {
+      const c = document.createElement('canvas');
+      c.width  = OVERLAY_TEX_W;
+      c.height = OVERLAY_TEX_H;
+      return c;
+    }
+
+    // Temperature overlay
+    const tempCanvas = makeOverlayCanvas();
+    const tempTex    = new THREE.CanvasTexture(tempCanvas);
+    const tempMesh   = new THREE.Mesh(
+      new THREE.SphereGeometry(EARTH_RADIUS * 1.002, 96, 96),
+      new THREE.MeshBasicMaterial({ map: tempTex, transparent: true, opacity: 0.6, depthWrite: false }),
+    );
+    tempMesh.visible = false;
+    globe.add(tempMesh);
+    weatherOverlayRef.current   = tempMesh;
+    weatherTexRef.current       = tempTex;
+    weatherTexCanvasRef.current = tempCanvas;
+
+    // Rain overlay (slightly above temperature layer)
+    const rainCanvas = makeOverlayCanvas();
+    const rainTex    = new THREE.CanvasTexture(rainCanvas);
+    const rainMesh   = new THREE.Mesh(
+      new THREE.SphereGeometry(EARTH_RADIUS * 1.003, 96, 96),
+      new THREE.MeshBasicMaterial({ map: rainTex, transparent: true, opacity: 0.8, depthWrite: false }),
+    );
+    rainMesh.visible = false;
+    globe.add(rainMesh);
+    rainOverlayRef.current   = rainMesh;
+    rainTexRef.current       = rainTex;
+    rainTexCanvasRef.current = rainCanvas;
 
     // Atmosphere
     scene.add(new THREE.Mesh(
@@ -347,6 +405,7 @@ const Globe = forwardRef(function Globe(
       if (ctx && canvas && (!IS_MOBILE || frameCount % 2 === 0)) {
         drawLayerLabels(ctx, canvas, globe, camera, layerModeRef.current, camera.position.z);
       }
+
     }
     animate();
 
@@ -407,6 +466,31 @@ const Globe = forwardRef(function Globe(
       })
       .catch(() => { borderLoadingRef.current = false; });
   }, [layerMode]);
+
+  // ── Weather layer (temperature, rain) ─────────────────────────────
+  useEffect(() => {
+    if (weatherOverlayRef.current) weatherOverlayRef.current.visible = weatherLayer === 'temperature';
+    if (rainOverlayRef.current)    rainOverlayRef.current.visible     = weatherLayer === 'rain';
+
+    if (!weatherLayer) return;
+
+    // Use cached data if fetched within the last 30 minutes
+    const now = Date.now();
+    if (weatherGridRef.current && now - weatherFetchedAtRef.current < 30 * 60 * 1000) return;
+
+    onWeatherLoading?.(true);
+    fetchWeatherGrid().then(grid => {
+      weatherGridRef.current      = grid;
+      weatherFetchedAtRef.current = Date.now();
+
+      buildTemperatureCanvas(grid, weatherTexCanvasRef.current);
+      if (weatherTexRef.current) weatherTexRef.current.needsUpdate = true;
+
+      buildRainCanvas(grid, rainTexCanvasRef.current);
+      if (rainTexRef.current) rainTexRef.current.needsUpdate = true;
+    }).catch(err => console.warn('Weather grid fetch failed:', err))
+      .finally(() => onWeatherLoading?.(false));
+  }, [weatherLayer]);
 
   return (
     <div className="globe-mount" ref={mountRef}>
