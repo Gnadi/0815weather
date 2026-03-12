@@ -33,6 +33,49 @@ export async function searchCities(query) {
   return data.results ?? [];
 }
 
+// ── Global weather grid (288 points: 24 lons × 12 lats, every 15°) ──────────
+export const GRID_LATS = Array.from({ length: 12 }, (_, i) => -82.5 + i * 15);
+export const GRID_LONS = Array.from({ length: 24 }, (_, i) => -172.5 + i * 15);
+
+export async function fetchWeatherGrid() {
+  const DEG2RAD = Math.PI / 180;
+  const points = GRID_LATS.flatMap(lat => GRID_LONS.map(lon => ({ lat, lon })));
+  const results = await Promise.all(
+    points.map(({ lat, lon }) =>
+      fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&current=temperature_2m,wind_speed_10m,wind_direction_10m,precipitation`,
+      )
+        .then(r => r.json())
+        .catch(() => null),
+    ),
+  );
+
+  // Build 2D arrays [latIdx][lonIdx]
+  const nLat = GRID_LATS.length; // 12
+  const nLon = GRID_LONS.length; // 24
+  const temp  = Array.from({ length: nLat }, () => new Float32Array(nLon));
+  const windU = Array.from({ length: nLat }, () => new Float32Array(nLon));
+  const windV = Array.from({ length: nLat }, () => new Float32Array(nLon));
+  const rain  = Array.from({ length: nLat }, () => new Float32Array(nLon));
+
+  results.forEach((res, idx) => {
+    const li = Math.floor(idx / nLon);
+    const lo = idx % nLon;
+    const cur = res?.current ?? {};
+    const t   = cur.temperature_2m ?? 0;
+    const spd = cur.wind_speed_10m ?? 0;
+    const dir = (cur.wind_direction_10m ?? 0) * DEG2RAD;
+    const pr  = cur.precipitation ?? 0;
+    temp[li][lo]  = t;
+    windU[li][lo] = -spd * Math.sin(dir); // eastward component km/h
+    windV[li][lo] = -spd * Math.cos(dir); // northward component km/h
+    rain[li][lo]  = pr;
+  });
+
+  return { lats: GRID_LATS, lons: GRID_LONS, temp, windU, windV, rain };
+}
+
 export const TICKER_CITIES = [
   { name: 'Tokyo',     country: 'Japan',          lat: 35.68,  lon: 139.69 },
   { name: 'Cairo',     country: 'Egypt',           lat: 30.06,  lon: 31.24  },

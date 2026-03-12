@@ -24,8 +24,8 @@ export default function App() {
   const [gameMode, setGameMode]     = useState(false);
   const [gameModeKey, setGameModeKey] = useState(0);
 
-  // Layer toggle: cycles through plain → borders → capitals → cities
-  const LAYER_CYCLE = ['plain', 'borders', 'capitals', 'cities'];
+  // Layer toggle: cycles through plain → borders → capitals → cities → weather
+  const LAYER_CYCLE = ['plain', 'borders', 'capitals', 'cities', 'weather'];
   const [layerMode, setLayerMode] = useState('plain');
   function cycleLayer() {
     setLayerMode(cur => {

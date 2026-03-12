@@ -2,6 +2,13 @@ import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import * as THREE from 'three';
 import { CAPITALS, BIG_CITIES } from '../data/geoData';
 import { uvToLatLon, latLonToXYZ } from '../utils/coordinates';
+import { fetchWeatherGrid } from '../utils/api';
+import {
+  bilinearInterpolate,
+  buildTemperatureCanvas,
+  buildRainCanvas,
+  windSpeedToColor,
+} from '../utils/weatherOverlay';
 
 const EARTH_RADIUS   = 2;
 const EARTH_TEXTURE  = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
@@ -15,6 +22,14 @@ const FULL_CAP_ZOOM_THRESHOLD = 5.8;   // show all capitals below this
 // Detect mobile once — used for quality scaling
 const IS_MOBILE = typeof window !== 'undefined' &&
   (window.innerWidth <= 768 || navigator.maxTouchPoints > 0);
+
+// ── Weather overlay constants ─────────────────────────────────────────────────
+const N_PARTICLES     = IS_MOBILE ? 3500 : 10000;
+const MAX_PARTICLE_AGE = 800;   // frames before respawn
+const PARTICLE_SPEED  = 0.0004; // scale factor for wind → angle per frame
+const OVERLAY_TEX_W   = 360;
+const OVERLAY_TEX_H   = 180;
+const DEG2RAD         = Math.PI / 180;
 
 // Reusable Three.js objects — allocated once, never in hot path
 const _v3a  = new THREE.Vector3();
@@ -154,6 +169,18 @@ const Globe = forwardRef(function Globe(
   const borderLinesRef   = useRef(null);
   const borderLoadingRef = useRef(false);
 
+  // Weather overlay state
+  const weatherOverlayRef    = useRef(null);   // THREE.Mesh (temp sphere)
+  const weatherTexRef        = useRef(null);   // THREE.CanvasTexture (temp)
+  const weatherTexCanvasRef  = useRef(null);   // off-screen canvas (temp)
+  const rainOverlayRef       = useRef(null);   // THREE.Mesh (rain sphere)
+  const rainTexRef           = useRef(null);   // THREE.CanvasTexture (rain)
+  const rainTexCanvasRef     = useRef(null);   // off-screen canvas (rain)
+  const windParticlesMeshRef = useRef(null);   // THREE.Points
+  const windParticleDataRef  = useRef(null);   // {lat,lon,age}[] flat storage
+  const weatherGridRef       = useRef(null);   // fetched grid data
+  const weatherFetchedAtRef  = useRef(0);      // timestamp for 30-min refresh
+
   // Keep layerModeRef in sync with prop
   useEffect(() => { layerModeRef.current = layerMode; }, [layerMode]);
 
@@ -218,6 +245,69 @@ const Globe = forwardRef(function Globe(
     );
     scene.add(globe);
     globeRef.current = globe;
+
+    // ── Weather overlays (temperature + rain textures) ───────────────
+    function makeOverlayCanvas() {
+      const c = document.createElement('canvas');
+      c.width  = OVERLAY_TEX_W;
+      c.height = OVERLAY_TEX_H;
+      return c;
+    }
+
+    // Temperature overlay
+    const tempCanvas = makeOverlayCanvas();
+    const tempTex    = new THREE.CanvasTexture(tempCanvas);
+    const tempMesh   = new THREE.Mesh(
+      new THREE.SphereGeometry(EARTH_RADIUS * 1.002, 96, 96),
+      new THREE.MeshBasicMaterial({ map: tempTex, transparent: true, opacity: 0.6, depthWrite: false }),
+    );
+    tempMesh.visible = false;
+    globe.add(tempMesh);
+    weatherOverlayRef.current   = tempMesh;
+    weatherTexRef.current       = tempTex;
+    weatherTexCanvasRef.current = tempCanvas;
+
+    // Rain overlay (slightly above temperature layer)
+    const rainCanvas = makeOverlayCanvas();
+    const rainTex    = new THREE.CanvasTexture(rainCanvas);
+    const rainMesh   = new THREE.Mesh(
+      new THREE.SphereGeometry(EARTH_RADIUS * 1.003, 96, 96),
+      new THREE.MeshBasicMaterial({ map: rainTex, transparent: true, opacity: 0.8, depthWrite: false }),
+    );
+    rainMesh.visible = false;
+    globe.add(rainMesh);
+    rainOverlayRef.current   = rainMesh;
+    rainTexRef.current       = rainTex;
+    rainTexCanvasRef.current = rainCanvas;
+
+    // ── Wind particles ────────────────────────────────────────────────
+    const posArr    = new Float32Array(N_PARTICLES * 3);
+    const colorArr  = new Float32Array(N_PARTICLES * 3);
+    const partGeo   = new THREE.BufferGeometry();
+    const posAttr   = new THREE.BufferAttribute(posArr,   3);
+    const colorAttr = new THREE.BufferAttribute(colorArr, 3);
+    posAttr.setUsage(THREE.DynamicDrawUsage);
+    colorAttr.setUsage(THREE.DynamicDrawUsage);
+    partGeo.setAttribute('position', posAttr);
+    partGeo.setAttribute('color',    colorAttr);
+    const partMesh = new THREE.Points(
+      partGeo,
+      new THREE.PointsMaterial({ size: 0.018, vertexColors: true, transparent: true, opacity: 0.85 }),
+    );
+    partMesh.visible = false;
+    globe.add(partMesh);
+    windParticlesMeshRef.current = partMesh;
+
+    // Particle data: lat, lon, age per particle (flat arrays for speed)
+    const pLat = new Float32Array(N_PARTICLES);
+    const pLon = new Float32Array(N_PARTICLES);
+    const pAge = new Uint16Array(N_PARTICLES);
+    for (let i = 0; i < N_PARTICLES; i++) {
+      pLat[i] = (Math.random() - 0.5) * 160;   // -80 to +80
+      pLon[i] = (Math.random() - 0.5) * 360;   // -180 to +180
+      pAge[i] = Math.floor(Math.random() * MAX_PARTICLE_AGE);
+    }
+    windParticleDataRef.current = { pLat, pLon, pAge };
 
     // Atmosphere
     scene.add(new THREE.Mesh(
@@ -329,6 +419,62 @@ const Globe = forwardRef(function Globe(
     mount.addEventListener('touchend',   onTouchEnd,   { passive: true });
     mount.addEventListener('wheel',      onWheel,      { passive: false });
 
+    // ── Wind particle updater (called from RAF loop) ─────────────────
+    function _updateWindParticles(grid) {
+      const pd      = windParticleDataRef.current;
+      const mesh    = windParticlesMeshRef.current;
+      if (!pd || !mesh) return;
+      const { pLat, pLon, pAge } = pd;
+      const posAttr   = mesh.geometry.attributes.position;
+      const colorAttr = mesh.geometry.attributes.color;
+      const pos   = posAttr.array;
+      const col   = colorAttr.array;
+      const R     = EARTH_RADIUS * 1.004;  // slightly above globe surface
+
+      for (let i = 0; i < N_PARTICLES; i++) {
+        let lat = pLat[i];
+        let lon = pLon[i];
+        const age = pAge[i];
+
+        // Respawn if too old or out of bounds
+        if (age >= MAX_PARTICLE_AGE || Math.abs(lat) > 85) {
+          pLat[i] = (Math.random() - 0.5) * 160;
+          pLon[i] = (Math.random() - 0.5) * 360;
+          pAge[i] = 0;
+          lat = pLat[i]; lon = pLon[i];
+        }
+
+        // Interpolate wind at this position
+        const u = bilinearInterpolate(grid, lat, lon, 'windU');  // km/h east
+        const v = bilinearInterpolate(grid, lat, lon, 'windV');  // km/h north
+        const speed = Math.sqrt(u * u + v * v);
+
+        // Advance position (convert km/h to degrees per frame)
+        const cosLat = Math.cos(lat * DEG2RAD) || 0.001;
+        pLat[i] += v * PARTICLE_SPEED;
+        pLon[i] += (u / cosLat) * PARTICLE_SPEED;
+        // Wrap longitude
+        if (pLon[i] > 180)  pLon[i] -= 360;
+        if (pLon[i] < -180) pLon[i] += 360;
+        pAge[i] = age + 1;
+
+        // Convert lat/lon to 3D (globe-local coords — globe child, so no world transform needed)
+        const phi   = (90 - lat) * DEG2RAD;
+        const theta = (lon + 180) * DEG2RAD;
+        pos[i * 3]     = -R * Math.sin(phi) * Math.cos(theta);
+        pos[i * 3 + 1] =  R * Math.cos(phi);
+        pos[i * 3 + 2] =  R * Math.sin(phi) * Math.sin(theta);
+
+        // Color by wind speed
+        const [r, g, b] = windSpeedToColor(speed);
+        col[i * 3]     = r / 255;
+        col[i * 3 + 1] = g / 255;
+        col[i * 3 + 2] = b / 255;
+      }
+      posAttr.needsUpdate   = true;
+      colorAttr.needsUpdate = true;
+    }
+
     // ── Main animation loop ─────────────────────────────────────
     // On mobile: throttle label canvas redraws to every 2nd frame
     let frameCount = 0;
@@ -346,6 +492,11 @@ const Globe = forwardRef(function Globe(
       const canvas = labelCanvasRef.current;
       if (ctx && canvas && (!IS_MOBILE || frameCount % 2 === 0)) {
         drawLayerLabels(ctx, canvas, globe, camera, layerModeRef.current, camera.position.z);
+      }
+
+      // Animate wind particles
+      if (layerModeRef.current === 'weather' && weatherGridRef.current) {
+        _updateWindParticles(weatherGridRef.current);
       }
     }
     animate();
@@ -406,6 +557,42 @@ const Globe = forwardRef(function Globe(
         borderLoadingRef.current = false;
       })
       .catch(() => { borderLoadingRef.current = false; });
+  }, [layerMode]);
+
+  // ── Weather layer (temperature, rain, wind particles) ─────────────
+  useEffect(() => {
+    const isWeather = layerMode === 'weather';
+
+    if (weatherOverlayRef.current)    weatherOverlayRef.current.visible    = isWeather;
+    if (rainOverlayRef.current)       rainOverlayRef.current.visible        = isWeather;
+    if (windParticlesMeshRef.current) windParticlesMeshRef.current.visible  = isWeather;
+
+    if (!isWeather) return;
+
+    // Use cached data if fetched within the last 30 minutes
+    const now = Date.now();
+    if (weatherGridRef.current && now - weatherFetchedAtRef.current < 30 * 60 * 1000) return;
+
+    fetchWeatherGrid().then(grid => {
+      weatherGridRef.current      = grid;
+      weatherFetchedAtRef.current = Date.now();
+
+      buildTemperatureCanvas(grid, weatherTexCanvasRef.current);
+      if (weatherTexRef.current) weatherTexRef.current.needsUpdate = true;
+
+      buildRainCanvas(grid, rainTexCanvasRef.current);
+      if (rainTexRef.current) rainTexRef.current.needsUpdate = true;
+
+      // Scatter particles randomly (ages spread to avoid simultaneous respawning)
+      const pd = windParticleDataRef.current;
+      if (pd) {
+        for (let i = 0; i < N_PARTICLES; i++) {
+          pd.pLat[i] = (Math.random() - 0.5) * 160;
+          pd.pLon[i] = (Math.random() - 0.5) * 360;
+          pd.pAge[i] = Math.floor(Math.random() * MAX_PARTICLE_AGE);
+        }
+      }
+    }).catch(err => console.warn('Weather grid fetch failed:', err));
   }, [layerMode]);
 
   return (

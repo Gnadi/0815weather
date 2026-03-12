@@ -4,6 +4,7 @@ const LAYER_LABELS = {
   borders:  'Borders',
   capitals: 'Capitals',
   cities:   'All Cities',
+  weather:  'Weather',
 };
 
 export default function GlobeControls({ onZoomIn, onZoomOut, onReset, onToggleLayers, layerMode }) {
