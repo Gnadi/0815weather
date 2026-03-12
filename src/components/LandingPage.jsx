@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { subscribeEmail } from '../hooks/useNewsletter';
 import './LandingPage.css';
 
 const CITY_CARDS = [
@@ -26,6 +28,79 @@ const CITY_CARDS = [
     img: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400&q=80',
   },
 ];
+
+function NewsletterSection() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState('idle'); // idle | loading | success | duplicate | error
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!email) return;
+    setStatus('loading');
+    try {
+      const result = await subscribeEmail(email.trim().toLowerCase());
+      setStatus(result.ok ? 'success' : 'duplicate');
+    } catch {
+      setStatus('error');
+    }
+  }
+
+  return (
+    <section className="landing-newsletter">
+      <div className="newsletter-inner">
+        <div className="newsletter-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <h2 className="newsletter-title">Stay Up to Date</h2>
+        <p className="newsletter-sub">
+          Get weekly weather highlights, climate insights, and new feature updates
+          delivered straight to your inbox.
+        </p>
+
+        {status === 'success' ? (
+          <div className="newsletter-success">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            You're subscribed! We'll keep you in the loop.
+          </div>
+        ) : (
+          <form className="newsletter-form" onSubmit={handleSubmit}>
+            <input
+              className="newsletter-input"
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              disabled={status === 'loading'}
+            />
+            <button
+              className="newsletter-btn"
+              type="submit"
+              disabled={status === 'loading'}
+            >
+              {status === 'loading' ? 'Subscribing…' : 'Subscribe'}
+            </button>
+          </form>
+        )}
+
+        {status === 'duplicate' && (
+          <p className="newsletter-hint newsletter-hint--warn">You're already subscribed with that address.</p>
+        )}
+        {status === 'error' && (
+          <p className="newsletter-hint newsletter-hint--warn">Something went wrong. Please try again.</p>
+        )}
+        {status === 'idle' && (
+          <p className="newsletter-hint">No spam, ever. Unsubscribe anytime.</p>
+        )}
+      </div>
+    </section>
+  );
+}
 
 export default function LandingPage({ onExplore }) {
   return (
@@ -190,6 +265,9 @@ export default function LandingPage({ onExplore }) {
           </div>
         </div>
       </section>
+
+      {/* ── Newsletter ───────────────────────────────────────── */}
+      <NewsletterSection />
 
       {/* ── Footer ───────────────────────────────────────────── */}
       <footer className="landing-footer">
