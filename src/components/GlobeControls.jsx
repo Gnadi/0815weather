@@ -9,7 +9,6 @@ const LAYER_LABELS = {
 const WEATHER_LAYERS = [
   { id: 'temperature', label: 'Temperature', icon: '🌡' },
   { id: 'rain',        label: 'Rain',        icon: '🌧' },
-  { id: 'wind',        label: 'Wind',        icon: '💨' },
 ];
 
 const LEGENDS = {
@@ -25,12 +24,7 @@ const LEGENDS = {
     unit: 'mm/h',
     title: 'Precipitation',
   },
-  wind: {
-    gradient: 'linear-gradient(to right, #1e64ff, #00dcc8, #50dc32, #ffc800, #ff3c00)',
-    labels: ['0', '20', '40', '60', '80+'],
-    unit: 'km/h',
-    title: 'Wind Speed',
-  },
+
 };
 
 function WeatherLegend({ layer }) {
