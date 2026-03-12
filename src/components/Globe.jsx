@@ -151,7 +151,7 @@ function _drawCity(ctx, W, H, city, cx, cy, cz, R, globeMatrix, camera, isBigCit
 
 // ─────────────────────────────────────────────────────────────────
 const Globe = forwardRef(function Globe(
-  { onLocationSelect, selectedLocation, cityLabels, layerMode },
+  { onLocationSelect, selectedLocation, cityLabels, layerMode, weatherLayer },
   ref,
 ) {
   const mountRef    = useRef(null);
@@ -162,6 +162,7 @@ const Globe = forwardRef(function Globe(
 
   // Refs that the RAF loop reads without triggering re-renders
   const layerModeRef     = useRef(layerMode);
+  const weatherLayerRef  = useRef(weatherLayer);
   const labelCanvasRef   = useRef(null);
   const labelCtxRef      = useRef(null);
 
@@ -183,6 +184,7 @@ const Globe = forwardRef(function Globe(
 
   // Keep layerModeRef in sync with prop
   useEffect(() => { layerModeRef.current = layerMode; }, [layerMode]);
+  useEffect(() => { weatherLayerRef.current = weatherLayer; }, [weatherLayer]);
 
   useImperativeHandle(ref, () => ({
     zoomIn()  { if (cameraRef.current) cameraRef.current.position.z = Math.max(cameraRef.current.position.z - 0.5, 2.5); },
@@ -495,7 +497,7 @@ const Globe = forwardRef(function Globe(
       }
 
       // Animate wind particles
-      if (layerModeRef.current === 'weather' && weatherGridRef.current) {
+      if (weatherLayerRef.current === 'wind' && weatherGridRef.current) {
         _updateWindParticles(weatherGridRef.current);
       }
     }
@@ -561,17 +563,19 @@ const Globe = forwardRef(function Globe(
 
   // ── Weather layer (temperature, rain, wind particles) ─────────────
   useEffect(() => {
-    const isWeather = layerMode === 'weather';
+    if (weatherOverlayRef.current)    weatherOverlayRef.current.visible    = weatherLayer === 'temperature';
+    if (rainOverlayRef.current)       rainOverlayRef.current.visible        = weatherLayer === 'rain';
+    if (windParticlesMeshRef.current) windParticlesMeshRef.current.visible  = weatherLayer === 'wind';
 
-    if (weatherOverlayRef.current)    weatherOverlayRef.current.visible    = isWeather;
-    if (rainOverlayRef.current)       rainOverlayRef.current.visible        = isWeather;
-    if (windParticlesMeshRef.current) windParticlesMeshRef.current.visible  = isWeather;
-
-    if (!isWeather) return;
+    if (!weatherLayer) return;
 
     // Use cached data if fetched within the last 30 minutes
     const now = Date.now();
-    if (weatherGridRef.current && now - weatherFetchedAtRef.current < 30 * 60 * 1000) return;
+    if (weatherGridRef.current && now - weatherFetchedAtRef.current < 30 * 60 * 1000) {
+      // Grid already loaded — just scatter particles if switching to wind
+      if (weatherLayer === 'wind') _scatterParticles();
+      return;
+    }
 
     fetchWeatherGrid().then(grid => {
       weatherGridRef.current      = grid;
@@ -583,17 +587,19 @@ const Globe = forwardRef(function Globe(
       buildRainCanvas(grid, rainTexCanvasRef.current);
       if (rainTexRef.current) rainTexRef.current.needsUpdate = true;
 
-      // Scatter particles randomly (ages spread to avoid simultaneous respawning)
-      const pd = windParticleDataRef.current;
-      if (pd) {
-        for (let i = 0; i < N_PARTICLES; i++) {
-          pd.pLat[i] = (Math.random() - 0.5) * 160;
-          pd.pLon[i] = (Math.random() - 0.5) * 360;
-          pd.pAge[i] = Math.floor(Math.random() * MAX_PARTICLE_AGE);
-        }
-      }
+      _scatterParticles();
     }).catch(err => console.warn('Weather grid fetch failed:', err));
-  }, [layerMode]);
+
+    function _scatterParticles() {
+      const pd = windParticleDataRef.current;
+      if (!pd) return;
+      for (let i = 0; i < N_PARTICLES; i++) {
+        pd.pLat[i] = (Math.random() - 0.5) * 160;
+        pd.pLon[i] = (Math.random() - 0.5) * 360;
+        pd.pAge[i] = Math.floor(Math.random() * MAX_PARTICLE_AGE);
+      }
+    }
+  }, [weatherLayer]);
 
   return (
     <div className="globe-mount" ref={mountRef}>

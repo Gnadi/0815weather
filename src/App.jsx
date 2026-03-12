@@ -24,8 +24,8 @@ export default function App() {
   const [gameMode, setGameMode]     = useState(false);
   const [gameModeKey, setGameModeKey] = useState(0);
 
-  // Layer toggle: cycles through plain → borders → capitals → cities → weather
-  const LAYER_CYCLE = ['plain', 'borders', 'capitals', 'cities', 'weather'];
+  // Layer toggle: cycles through plain → borders → capitals → cities
+  const LAYER_CYCLE = ['plain', 'borders', 'capitals', 'cities'];
   const [layerMode, setLayerMode] = useState('plain');
   function cycleLayer() {
     setLayerMode(cur => {
@@ -33,6 +33,10 @@ export default function App() {
       return LAYER_CYCLE[(idx + 1) % LAYER_CYCLE.length];
     });
   }
+
+  // Weather overlay state (independent from layer cycle)
+  const [weatherLayer, setWeatherLayer] = useState(null);  // null | 'temperature' | 'rain' | 'wind'
+  const [weatherOpen,  setWeatherOpen]  = useState(false); // picker panel open
 
   // Load weather for a location
   const loadWeather = useCallback(async (lat, lon, city, country) => {
@@ -118,6 +122,7 @@ export default function App() {
             selectedLocation={location}
             cityLabels={cityLabels}
             layerMode={layerMode}
+            weatherLayer={weatherLayer}
           />
           <GlobeControls
             onZoomIn={() => globeRef.current?.zoomIn()}
@@ -125,6 +130,10 @@ export default function App() {
             onReset={() => globeRef.current?.reset()}
             onToggleLayers={cycleLayer}
             layerMode={layerMode}
+            weatherLayer={weatherLayer}
+            onWeatherLayerChange={setWeatherLayer}
+            weatherOpen={weatherOpen}
+            onToggleWeatherPanel={() => setWeatherOpen(o => !o)}
           />
         </div>
         {gameMode ? (
