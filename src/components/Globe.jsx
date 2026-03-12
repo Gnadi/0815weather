@@ -2,6 +2,7 @@ import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import * as THREE from 'three';
 import { CAPITALS, BIG_CITIES } from '../data/geoData';
 import { uvToLatLon, latLonToXYZ } from '../utils/coordinates';
+import { fetchGlobalWeatherGrid } from '../utils/api';
 
 const EARTH_RADIUS   = 2;
 const EARTH_TEXTURE  = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
@@ -57,6 +58,132 @@ function buildBorderGeometry(geojson) {
   const geom = new THREE.BufferGeometry();
   geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   return geom;
+}
+
+// ── Weather layer helpers ──────────────────────────────────────────
+const DEG2RAD = Math.PI / 180;
+const PARTICLE_COUNT = typeof window !== 'undefined' &&
+  (window.innerWidth <= 768 || navigator.maxTouchPoints > 0) ? 300 : 800;
+
+function findNearestGrid(lat, lon, grid) {
+  let nearest = grid[0];
+  let minD = Infinity;
+  for (const p of grid) {
+    const d = (lat - p.lat) ** 2 + (lon - p.lon) ** 2;
+    if (d < minD) { minD = d; nearest = p; }
+  }
+  return nearest;
+}
+
+function updateWindParticles(particles, states, grid) {
+  const pos = particles.geometry.attributes.position.array;
+  const col = particles.geometry.attributes.color.array;
+  for (let i = 0; i < states.length; i++) {
+    const p = states[i];
+    p.age++;
+    if (p.age >= p.maxAge) {
+      p.lat = Math.random() * 150 - 75;
+      p.lon = Math.random() * 360 - 180;
+      p.age = 0;
+      p.maxAge = 120 + Math.random() * 80;
+    }
+    const g = findNearestGrid(p.lat, p.lon, grid);
+    if (g && g.windSpeed > 0) {
+      const dirRad = g.windDir * DEG2RAD;
+      const spd = g.windSpeed * 0.00018;
+      p.lat += Math.cos(dirRad) * spd;
+      p.lon += Math.sin(dirRad) * spd / Math.max(0.1, Math.cos(p.lat * DEG2RAD));
+    }
+    p.lat = Math.max(-75, Math.min(75, p.lat));
+    if (p.lon > 180)  p.lon -= 360;
+    if (p.lon < -180) p.lon += 360;
+
+    const { x, y, z } = latLonToXYZ(p.lat, p.lon, EARTH_RADIUS * 1.005);
+    pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+
+    const fade = 1 - p.age / p.maxAge;
+    const ws = g ? g.windSpeed : 0;
+    let r, g2, b;
+    if      (ws < 15)  { r = 0.3;  g2 = 0.6;  b = 1.0; }
+    else if (ws < 40)  { r = 0.95; g2 = 0.95; b = 1.0; }
+    else if (ws < 70)  { r = 1.0;  g2 = 0.85; b = 0.1; }
+    else               { r = 1.0;  g2 = 0.35; b = 0.05; }
+    col[i * 3] = r * fade; col[i * 3 + 1] = g2 * fade; col[i * 3 + 2] = b * fade;
+  }
+  particles.geometry.attributes.position.needsUpdate = true;
+  particles.geometry.attributes.color.needsUpdate    = true;
+}
+
+// Reusable vectors for weather overlay (separate from _v3a/_v3b used by labels)
+const _wv3a = new THREE.Vector3();
+const _wv3b = new THREE.Vector3();
+const _wmat = new THREE.Matrix4();
+
+function drawWeatherOverlay(ctx, canvas, globe, camera, grid) {
+  const W = canvas.width, H = canvas.height;
+  if (!W || !H) return;
+  const t = Date.now() / 1000;
+
+  _wmat.copy(globe.matrixWorld).invert();
+  _wv3b.copy(camera.position).applyMatrix4(_wmat).normalize();
+  const cx = _wv3b.x, cy = _wv3b.y, cz = _wv3b.z;
+
+  for (const pt of grid) {
+    const isThunder = pt.weatherCode >= 95;
+    const isRain    = pt.weatherCode >= 51 && pt.weatherCode < 95 && pt.precipitation > 0.3;
+    const isSnow    = pt.weatherCode >= 71 && pt.weatherCode < 78;
+    if (!isThunder && !isRain && !isSnow) continue;
+
+    const { x: nx, y: ny, z: nz } = latLonToXYZ(pt.lat, pt.lon, 1);
+    const dot = nx * cx + ny * cy + nz * cz;
+    if (dot < 0.1) continue;
+    const alpha = Math.min(1, (dot - 0.1) / 0.15);
+
+    _wv3a.set(nx * EARTH_RADIUS * 1.02, ny * EARTH_RADIUS * 1.02, nz * EARTH_RADIUS * 1.02);
+    _wv3a.applyMatrix4(globe.matrixWorld);
+    _wv3a.project(camera);
+    const px = (_wv3a.x * 0.5 + 0.5) * W;
+    const py = (1 - (_wv3a.y * 0.5 + 0.5)) * H;
+    if (px < -20 || px > W + 20 || py < -20 || py > H + 20) continue;
+
+    ctx.save();
+    if (isThunder) {
+      const pulse = Math.sin(t * 3 + pt.lon * 0.1) * 0.5 + 0.5;
+      ctx.globalAlpha = alpha * 0.9;
+      ctx.beginPath();
+      ctx.arc(px, py, 7 + pulse * 8, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffee00';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(px, py, 14 + pulse * 6, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,200,0,0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffee00';
+      ctx.fill();
+    } else if (isRain) {
+      const pulse = Math.sin(t * 2 + pt.lat * 0.1) * 0.5 + 0.5;
+      const intensity = Math.min(1, pt.precipitation / 5);
+      ctx.globalAlpha = alpha * (0.5 + intensity * 0.3);
+      ctx.beginPath();
+      ctx.arc(px, py, 5 + pulse * 4, 0, Math.PI * 2);
+      const blue = Math.round(180 + 75 * intensity);
+      ctx.strokeStyle = `rgba(80,130,${blue},0.85)`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else if (isSnow) {
+      ctx.globalAlpha = alpha * 0.65;
+      ctx.beginPath();
+      ctx.arc(px, py, 5, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(200,225,255,0.8)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 }
 
 // ── Canvas label rendering ────────────────────────────────────────
@@ -136,7 +263,7 @@ function _drawCity(ctx, W, H, city, cx, cy, cz, R, globeMatrix, camera, isBigCit
 
 // ─────────────────────────────────────────────────────────────────
 const Globe = forwardRef(function Globe(
-  { onLocationSelect, selectedLocation, cityLabels, layerMode },
+  { onLocationSelect, selectedLocation, cityLabels, layerMode, showWeather },
   ref,
 ) {
   const mountRef    = useRef(null);
@@ -154,8 +281,17 @@ const Globe = forwardRef(function Globe(
   const borderLinesRef   = useRef(null);
   const borderLoadingRef = useRef(false);
 
+  // Weather layer refs
+  const showWeatherRef   = useRef(showWeather);
+  const weatherGridRef   = useRef(null);
+  const windParticlesRef = useRef(null);
+  const particleStateRef = useRef(null);
+
   // Keep layerModeRef in sync with prop
   useEffect(() => { layerModeRef.current = layerMode; }, [layerMode]);
+
+  // Keep showWeatherRef in sync with prop
+  useEffect(() => { showWeatherRef.current = showWeather; }, [showWeather]);
 
   useImperativeHandle(ref, () => ({
     zoomIn()  { if (cameraRef.current) cameraRef.current.position.z = Math.max(cameraRef.current.position.z - 0.5, 2.5); },
@@ -165,6 +301,73 @@ const Globe = forwardRef(function Globe(
       if (cameraRef.current) cameraRef.current.position.set(0, 0, 5);
     },
   }));
+
+  // ── Weather: fetch global grid data when layer is toggled on ──────
+  useEffect(() => {
+    if (!showWeather) return;
+    fetchGlobalWeatherGrid()
+      .then(d => { weatherGridRef.current = d; })
+      .catch(err => console.warn('Weather grid fetch failed:', err));
+    const id = setInterval(() => {
+      fetchGlobalWeatherGrid()
+        .then(d => { weatherGridRef.current = d; })
+        .catch(() => {});
+    }, 30 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [showWeather]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Weather: create / destroy wind particle system ────────────────
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!globe) return;
+
+    if (!showWeather) {
+      if (windParticlesRef.current) {
+        globe.remove(windParticlesRef.current);
+        windParticlesRef.current.geometry.dispose();
+        windParticlesRef.current.material.dispose();
+        windParticlesRef.current = null;
+        particleStateRef.current = null;
+      }
+      return;
+    }
+
+    const positions = new Float32Array(PARTICLE_COUNT * 3);
+    const colors    = new Float32Array(PARTICLE_COUNT * 3);
+    const states    = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const lat = Math.random() * 150 - 75;
+      const lon = Math.random() * 360 - 180;
+      const { x, y, z } = latLonToXYZ(lat, lon, EARTH_RADIUS * 1.005);
+      positions[i * 3] = x; positions[i * 3 + 1] = y; positions[i * 3 + 2] = z;
+      colors[i * 3] = 0.4; colors[i * 3 + 1] = 0.65; colors[i * 3 + 2] = 1.0;
+      states.push({ lat, lon, age: Math.floor(Math.random() * 120), maxAge: 120 + Math.random() * 80 });
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+    const mat = new THREE.PointsMaterial({
+      size: IS_MOBILE ? 0.012 : 0.016,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      sizeAttenuation: true,
+      depthWrite: false,
+    });
+    const particles = new THREE.Points(geo, mat);
+    globe.add(particles);
+    windParticlesRef.current = particles;
+    particleStateRef.current = states;
+
+    return () => {
+      globe.remove(particles);
+      geo.dispose();
+      mat.dispose();
+      windParticlesRef.current = null;
+      particleStateRef.current = null;
+    };
+  }, [showWeather]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Main Three.js setup (runs once) ──────────────────────────────
   useEffect(() => {
@@ -338,6 +541,12 @@ const Globe = forwardRef(function Globe(
       globe.rotation.x  = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, globe.rotation.x + rotVel.x));
       rotVel.x *= 0.92;
       rotVel.y *= 0.92;
+
+      // Update wind particles if weather layer is active
+      if (showWeatherRef.current && windParticlesRef.current && particleStateRef.current && weatherGridRef.current) {
+        updateWindParticles(windParticlesRef.current, particleStateRef.current, weatherGridRef.current);
+      }
+
       renderer.render(scene, camera);
 
       // Draw 2D label canvas — throttled on mobile for perf
@@ -346,6 +555,10 @@ const Globe = forwardRef(function Globe(
       const canvas = labelCanvasRef.current;
       if (ctx && canvas && (!IS_MOBILE || frameCount % 2 === 0)) {
         drawLayerLabels(ctx, canvas, globe, camera, layerModeRef.current, camera.position.z);
+        // Draw weather overlay on top of city labels
+        if (showWeatherRef.current && weatherGridRef.current) {
+          drawWeatherOverlay(ctx, canvas, globe, camera, weatherGridRef.current);
+        }
       }
     }
     animate();

@@ -6,7 +6,7 @@ const LAYER_LABELS = {
   cities:   'All Cities',
 };
 
-export default function GlobeControls({ onZoomIn, onZoomOut, onReset, onToggleLayers, layerMode }) {
+export default function GlobeControls({ onZoomIn, onZoomOut, onReset, onToggleLayers, layerMode, showWeather, onWeatherToggle }) {
   const isLayerActive = layerMode !== 'plain';
   const layerTitle = `Layer: ${LAYER_LABELS[layerMode] ?? layerMode} (click to cycle)`;
 
@@ -43,6 +43,16 @@ export default function GlobeControls({ onZoomIn, onZoomOut, onReset, onToggleLa
         {isLayerActive && (
           <span className="ctrl-layer-badge">{LAYER_LABELS[layerMode]}</span>
         )}
+      </button>
+      <button
+        className={`ctrl-btn ctrl-divider${showWeather ? ' ctrl-layers--active' : ''}`}
+        onClick={onWeatherToggle}
+        title={showWeather ? 'Hide live weather layer' : 'Show live weather (wind, storms, rain)'}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/>
+        </svg>
+        {showWeather && <span className="ctrl-layer-badge">Live</span>}
       </button>
     </div>
   );

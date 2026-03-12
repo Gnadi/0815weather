@@ -34,6 +34,9 @@ export default function App() {
     });
   }
 
+  // Live weather layer toggle
+  const [showWeather, setShowWeather] = useState(false);
+
   // Load weather for a location
   const loadWeather = useCallback(async (lat, lon, city, country) => {
     setLoading(true);
@@ -118,6 +121,7 @@ export default function App() {
             selectedLocation={location}
             cityLabels={cityLabels}
             layerMode={layerMode}
+            showWeather={showWeather}
           />
           <GlobeControls
             onZoomIn={() => globeRef.current?.zoomIn()}
@@ -125,6 +129,8 @@ export default function App() {
             onReset={() => globeRef.current?.reset()}
             onToggleLayers={cycleLayer}
             layerMode={layerMode}
+            showWeather={showWeather}
+            onWeatherToggle={() => setShowWeather(s => !s)}
           />
         </div>
         {gameMode ? (

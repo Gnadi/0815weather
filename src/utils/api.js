@@ -1,3 +1,34 @@
+// 60 strategic grid points for global weather overview (6 lat × 10 lon)
+export const GLOBAL_WEATHER_GRID = (() => {
+  const lats = [-50, -30, -10, 10, 30, 50];
+  const lons = [-165, -130, -95, -60, -25, 10, 45, 80, 115, 150];
+  const pts = [];
+  for (const lat of lats) for (const lon of lons) pts.push({ lat, lon });
+  return pts;
+})();
+
+export async function fetchGlobalWeatherGrid() {
+  const lats = GLOBAL_WEATHER_GRID.map(p => p.lat).join(',');
+  const lons = GLOBAL_WEATHER_GRID.map(p => p.lon).join(',');
+  const url =
+    `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}` +
+    `&current=wind_speed_10m,wind_direction_10m,precipitation,weather_code,cloud_cover` +
+    `&wind_speed_unit=kmh&forecast_days=1`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Grid weather fetch failed');
+  const data = await res.json();
+  if (!Array.isArray(data)) return [];
+  return data.map((item, i) => ({
+    lat: GLOBAL_WEATHER_GRID[i].lat,
+    lon: GLOBAL_WEATHER_GRID[i].lon,
+    windSpeed:    item.current?.wind_speed_10m    ?? 0,
+    windDir:      item.current?.wind_direction_10m ?? 0,
+    precipitation: item.current?.precipitation    ?? 0,
+    weatherCode:  item.current?.weather_code      ?? 0,
+    cloudCover:   item.current?.cloud_cover       ?? 0,
+  }));
+}
+
 export async function fetchWeather(lat, lon) {
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
