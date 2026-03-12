@@ -225,6 +225,9 @@ html, body, #root {
 .ctrl-weather--active { color: var(--accent) !important; }
 .ctrl-weather--active:hover { background: rgba(0,200,255,0.1) !important; }
 
+@keyframes spin { to { transform: rotate(360deg); } }
+.weather-spinner { animation: spin 0.9s linear infinite; color: var(--accent); }
+
 /* ── Globe controls wrapper (positions picker panel above pill) ─── */
 .globe-controls-wrapper {
   position: absolute;

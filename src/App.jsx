@@ -35,8 +35,9 @@ export default function App() {
   }
 
   // Weather overlay state (independent from layer cycle)
-  const [weatherLayer, setWeatherLayer] = useState(null);  // null | 'temperature' | 'rain' | 'wind'
-  const [weatherOpen,  setWeatherOpen]  = useState(false); // picker panel open
+  const [weatherLayer, setWeatherLayer]       = useState(null);  // null | 'temperature' | 'rain' | 'wind'
+  const [weatherOpen,  setWeatherOpen]        = useState(false); // picker panel open
+  const [weatherGridLoading, setWeatherGridLoading] = useState(false);
 
   // Load weather for a location
   const loadWeather = useCallback(async (lat, lon, city, country) => {
@@ -123,6 +124,7 @@ export default function App() {
             cityLabels={cityLabels}
             layerMode={layerMode}
             weatherLayer={weatherLayer}
+            onWeatherLoading={setWeatherGridLoading}
           />
           <GlobeControls
             onZoomIn={() => globeRef.current?.zoomIn()}
@@ -134,6 +136,7 @@ export default function App() {
             onWeatherLayerChange={setWeatherLayer}
             weatherOpen={weatherOpen}
             onToggleWeatherPanel={() => setWeatherOpen(o => !o)}
+            weatherGridLoading={weatherGridLoading}
           />
         </div>
         {gameMode ? (

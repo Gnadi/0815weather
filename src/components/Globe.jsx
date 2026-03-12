@@ -24,9 +24,9 @@ const IS_MOBILE = typeof window !== 'undefined' &&
   (window.innerWidth <= 768 || navigator.maxTouchPoints > 0);
 
 // ── Weather overlay constants ─────────────────────────────────────────────────
-const N_PARTICLES     = IS_MOBILE ? 3500 : 10000;
-const MAX_PARTICLE_AGE = 800;   // frames before respawn
-const PARTICLE_SPEED  = 0.0004; // scale factor for wind → angle per frame
+const N_PARTICLES     = IS_MOBILE ? 2000 : 6000;
+const MAX_PARTICLE_AGE = 1800;  // frames before respawn
+const PARTICLE_SPEED  = 0.00008; // scale factor for wind → angle per frame
 const OVERLAY_TEX_W   = 360;
 const OVERLAY_TEX_H   = 180;
 const DEG2RAD         = Math.PI / 180;
@@ -151,7 +151,7 @@ function _drawCity(ctx, W, H, city, cx, cy, cz, R, globeMatrix, camera, isBigCit
 
 // ─────────────────────────────────────────────────────────────────
 const Globe = forwardRef(function Globe(
-  { onLocationSelect, selectedLocation, cityLabels, layerMode, weatherLayer },
+  { onLocationSelect, selectedLocation, cityLabels, layerMode, weatherLayer, onWeatherLoading },
   ref,
 ) {
   const mountRef    = useRef(null);
@@ -577,6 +577,7 @@ const Globe = forwardRef(function Globe(
       return;
     }
 
+    onWeatherLoading?.(true);
     fetchWeatherGrid().then(grid => {
       weatherGridRef.current      = grid;
       weatherFetchedAtRef.current = Date.now();
@@ -588,7 +589,8 @@ const Globe = forwardRef(function Globe(
       if (rainTexRef.current) rainTexRef.current.needsUpdate = true;
 
       _scatterParticles();
-    }).catch(err => console.warn('Weather grid fetch failed:', err));
+    }).catch(err => console.warn('Weather grid fetch failed:', err))
+      .finally(() => onWeatherLoading?.(false));
 
     function _scatterParticles() {
       const pd = windParticleDataRef.current;

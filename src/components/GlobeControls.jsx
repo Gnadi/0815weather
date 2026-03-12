@@ -71,6 +71,7 @@ function WeatherPicker({ weatherLayer, onChange }) {
 export default function GlobeControls({
   onZoomIn, onZoomOut, onReset, onToggleLayers, layerMode,
   weatherLayer, onWeatherLayerChange, weatherOpen, onToggleWeatherPanel,
+  weatherGridLoading,
 }) {
   const isLayerActive    = layerMode !== 'plain';
   const isWeatherActive  = weatherOpen || weatherLayer !== null;
@@ -123,11 +124,16 @@ export default function GlobeControls({
           onClick={onToggleWeatherPanel}
           title="Weather overlays"
         >
-          {/* Cloud with sun SVG */}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
-          </svg>
-          {weatherBadge && (
+          {weatherGridLoading ? (
+            <svg className="weather-spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round"/>
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+            </svg>
+          )}
+          {!weatherGridLoading && weatherBadge && (
             <span className="ctrl-layer-badge">{weatherBadge}</span>
           )}
         </button>
