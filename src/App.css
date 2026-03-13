@@ -869,8 +869,8 @@ html, body, #root {
   flex-shrink: 0;
   padding: 12px 14px;
   padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
-  border-top: 1px solid var(--border);
-  background: var(--panel-bg);
+  border-top: 1px solid rgba(255,255,255,0.09);
+  background: #0a1430; /* fully opaque — content must never bleed through */
 }
 
 /* Full-width button variant used in footers */
@@ -1111,10 +1111,9 @@ html, body, #root {
   color: var(--subtext);
 }
 .game-result-pts {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--accent);
-  margin: 8px 0 4px;
 }
 
 /* ── Game over screen (inside scroll area; actions are in footer) ── */
@@ -1208,9 +1207,11 @@ html, body, #root {
   .game-mode-btn { padding: 8px 12px; font-size: 12px; }
   .game-score-val { font-size: 16px; }
   .game-over-score { font-size: 44px; }
+  /* Explicitly keep game-panel layout on mobile — overrides weather-panel media query */
+  .game-panel { overflow: hidden !important; padding: 0 !important; gap: 0 !important; }
   .game-header { margin: 10px 10px 0; }
   .game-scroll-content { padding: 10px; gap: 10px; }
-  .game-footer { padding: 10px 10px max(12px, env(safe-area-inset-bottom, 12px)); }
+  .game-footer { padding: 10px 10px max(12px, env(safe-area-inset-bottom, 12px)); background: #0a1430; }
 }
 
 /* ── Difficulty picker screen ───────────────────────────────────── */
@@ -1257,10 +1258,23 @@ html, body, #root {
 .game-difficulty-card.extreme:hover { border-color: #ff4444; }
 
 .game-diff-icon {
-  font-size: 26px;
+  font-size: 20px;
   line-height: 1;
   flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
 }
+/* Difficulty-specific icon backgrounds so dark emojis are always visible */
+.game-difficulty-card.easy     .game-diff-icon { background: rgba(0,232,122,0.15);  border-color: rgba(0,232,122,0.25); }
+.game-difficulty-card.moderate .game-diff-icon { background: rgba(255,184,77,0.15); border-color: rgba(255,184,77,0.25); }
+.game-difficulty-card.hard     .game-diff-icon { background: rgba(255,119,68,0.15); border-color: rgba(255,119,68,0.25); }
+.game-difficulty-card.extreme  .game-diff-icon { background: rgba(255,68,68,0.15);  border-color: rgba(255,68,68,0.25); }
 .game-diff-text {
   display: flex;
   flex-direction: column;
@@ -1353,7 +1367,6 @@ html, body, #root {
   font-size: 18px;
   font-weight: 700;
   color: var(--subtext);
-  margin: 6px 0 4px;
 }
 
 /* ── Skipped annotation in breakdown ───────────────────────────── */
