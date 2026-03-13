@@ -174,10 +174,19 @@ export default function GameMode({ onExit, onPlayAgain }) {
         return next;
       });
     } else {
+      const newScore = Math.max(0, roundScore - config.wrongPenalty);
       setWrongCount(w => w + 1);
-      setRoundScore(prev => Math.max(0, prev - config.wrongPenalty));
+      setRoundScore(newScore);
       setStatus('wrong');
-      setTimeout(() => { setStatus('guessing'); setGuess(''); }, 700);
+      if (newScore <= 0) {
+        setTimeout(() => {
+          setSkippedRounds(prev => [...prev, round]);
+          setRoundScores(prev => [...prev, 0]);
+          setStatus('skipped');
+        }, 700);
+      } else {
+        setTimeout(() => { setStatus('guessing'); setGuess(''); }, 700);
+      }
     }
   }
 
@@ -273,7 +282,7 @@ export default function GameMode({ onExit, onPlayAgain }) {
   return (
     <div className="weather-panel game-panel">
 
-      {/* ── Top bar: round dots + score ── */}
+      {/* ── Top bar: round dots + score + skip ── */}
       <div className="game-header">
         <div className="game-round-indicator">
           {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
@@ -291,6 +300,14 @@ export default function GameMode({ onExit, onPlayAgain }) {
             <span className="game-score-label">Total</span>
             <span className="game-score-val">{totalScore}</span>
           </div>
+          {(status === 'guessing' || status === 'wrong') && (
+            <>
+              <div className="game-score-divider" />
+              <button className="game-skip-header-btn" type="button" onClick={handleSkip}>
+                Skip
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -443,9 +460,6 @@ export default function GameMode({ onExit, onPlayAgain }) {
             />
             <button className="game-submit-btn" type="submit">GUESS</button>
           </div>
-          <button className="game-skip-btn" type="button" onClick={handleSkip}>
-            Skip this round
-          </button>
         </form>
       )}
     </div>
