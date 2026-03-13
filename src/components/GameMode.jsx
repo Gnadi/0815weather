@@ -116,21 +116,20 @@ function shuffle(arr) {
 }
 
 export default function GameMode({ onExit, onPlayAgain }) {
-  const [difficulty, setDifficulty]   = useState(null);
-  const [queue]                       = useState(() => shuffle(GAME_CITIES).slice(0, TOTAL_ROUNDS));
-  const [round, setRound]             = useState(0);
-  const [weather, setWeather]         = useState(null);
-  const [loadingW, setLoadingW]       = useState(false);
-  const [status, setStatus]           = useState('guessing'); // guessing | correct | wrong | skipped | gameover
-  const [guess, setGuess]             = useState('');
-  const [hintsUsed, setHintsUsed]     = useState([]);
-  const [wrongCount, setWrongCount]   = useState(0);
-  const [roundScore, setRoundScore]   = useState(0);
-  const [totalScore, setTotalScore]   = useState(0);
-  const [roundScores, setRoundScores] = useState([]);
+  const [difficulty, setDifficulty]       = useState(null);
+  const [queue]                           = useState(() => shuffle(GAME_CITIES).slice(0, TOTAL_ROUNDS));
+  const [round, setRound]                 = useState(0);
+  const [weather, setWeather]             = useState(null);
+  const [loadingW, setLoadingW]           = useState(false);
+  const [status, setStatus]               = useState('guessing'); // guessing|correct|wrong|skipped|gameover
+  const [guess, setGuess]                 = useState('');
+  const [hintsUsed, setHintsUsed]         = useState([]);
+  const [wrongCount, setWrongCount]       = useState(0);
+  const [roundScore, setRoundScore]       = useState(0);
+  const [totalScore, setTotalScore]       = useState(0);
+  const [roundScores, setRoundScores]     = useState([]);
   const [skippedRounds, setSkippedRounds] = useState([]);
-  const [newRecord, setNewRecord]     = useState(false);
-  const [highScore]                   = useState(() => parseInt(localStorage.getItem('weather_game_highscore') ?? '0', 10));
+  const [newRecord, setNewRecord]         = useState(false);
 
   const city   = queue[round];
   const config = difficulty ? DIFFICULTY_CONFIG[difficulty] : null;
@@ -203,10 +202,11 @@ export default function GameMode({ onExit, onPlayAgain }) {
   }
 
   // ── Difficulty picker ──────────────────────────────────────────────
+  // Scroll area: difficulty cards   Fixed footer: exit button
   if (!difficulty) {
     return (
       <div className="weather-panel game-panel">
-        <div className="game-difficulty-screen">
+        <div className="game-scroll-content">
           <div className="game-difficulty-title">Choose Difficulty</div>
           <div className="game-difficulty-cards">
             {Object.entries(DIFFICULTY_CONFIG).map(([key, cfg]) => (
@@ -225,41 +225,44 @@ export default function GameMode({ onExit, onPlayAgain }) {
               </button>
             ))}
           </div>
-          <button className="game-btn-secondary" style={{ width: '100%', marginTop: 8 }} onClick={onExit}>
-            Exit
-          </button>
+        </div>
+        <div className="game-footer">
+          <button className="game-btn-secondary game-btn-full" onClick={onExit}>Exit</button>
         </div>
       </div>
     );
   }
 
   // ── Game over screen ──────────────────────────────────────────────
+  // Scroll area: results breakdown   Fixed footer: action buttons
   if (status === 'gameover') {
     const best = Math.max(parseInt(localStorage.getItem('weather_game_highscore') ?? '0', 10), totalScore);
     return (
       <div className="weather-panel game-panel">
-        <div className="game-over-screen">
-          <div className="game-over-trophy">{newRecord ? '🏆' : '🎮'}</div>
-          <div className="game-over-title">{newRecord ? 'New Record!' : 'Game Over'}</div>
-          <div className="game-over-score">{totalScore} <span>pts</span></div>
-          <div className="game-over-highscore">Best: {best} pts</div>
-
-          <div className="game-rounds-breakdown">
-            {roundScores.map((s, i) => {
-              const wasSkipped = skippedRounds.includes(i);
-              const answerLabel = config.guessTarget === 'country' ? queue[i].country : queue[i].name;
-              return (
-                <div key={i} className="game-breakdown-row">
-                  <span className="game-breakdown-city">
-                    {answerLabel}
-                    {wasSkipped && <span className="game-breakdown-skipped"> (skipped)</span>}
-                  </span>
-                  <span className="game-breakdown-pts">{s} pts</span>
-                </div>
-              );
-            })}
+        <div className="game-scroll-content">
+          <div className="game-over-screen">
+            <div className="game-over-trophy">{newRecord ? '🏆' : '🎮'}</div>
+            <div className="game-over-title">{newRecord ? 'New Record!' : 'Game Over'}</div>
+            <div className="game-over-score">{totalScore} <span>pts</span></div>
+            <div className="game-over-highscore">Best: {best} pts</div>
+            <div className="game-rounds-breakdown">
+              {roundScores.map((s, i) => {
+                const wasSkipped = skippedRounds.includes(i);
+                const answerLabel = config.guessTarget === 'country' ? queue[i].country : queue[i].name;
+                return (
+                  <div key={i} className="game-breakdown-row">
+                    <span className="game-breakdown-city">
+                      {answerLabel}
+                      {wasSkipped && <span className="game-breakdown-skipped"> (skipped)</span>}
+                    </span>
+                    <span className="game-breakdown-pts">{s} pts</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-
+        </div>
+        <div className="game-footer">
           <div className="game-over-actions">
             <button className="game-btn-primary" onClick={onPlayAgain}>Play Again</button>
             <button className="game-btn-secondary" onClick={onExit}>Exit</button>
@@ -270,6 +273,9 @@ export default function GameMode({ onExit, onPlayAgain }) {
   }
 
   // ── Round screen ──────────────────────────────────────────────────
+  // Fixed header: round dots + score + skip
+  // Scroll area:  weather clues + hints
+  // Fixed footer: guess input / result card / skipped card
   const cur      = weather?.current;
   const daily    = weather?.daily;
   const info     = cur ? getWeatherInfo(cur.weather_code) : null;
@@ -282,7 +288,7 @@ export default function GameMode({ onExit, onPlayAgain }) {
   return (
     <div className="weather-panel game-panel">
 
-      {/* ── Top bar: round dots + score + skip ── */}
+      {/* ── Fixed header: round dots + score + skip ── */}
       <div className="game-header">
         <div className="game-round-indicator">
           {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => (
@@ -311,157 +317,159 @@ export default function GameMode({ onExit, onPlayAgain }) {
         </div>
       </div>
 
-      {/* ── Mystery placeholder ── */}
-      <div className="panel-header">
-        <div>
-          <h2 className="panel-city game-mystery-name">{config.mysteryLabel}</h2>
-          <p className="panel-country game-mystery-sub">{config.mysterySubLabel}</p>
+      {/* ── Scrollable clue content ── */}
+      <div className="game-scroll-content">
+        <div className="panel-header">
+          <div>
+            <h2 className="panel-city game-mystery-name">{config.mysteryLabel}</h2>
+            <p className="panel-country game-mystery-sub">{config.mysterySubLabel}</p>
+          </div>
         </div>
-      </div>
 
-      {/* ── Weather data ── */}
-      {loadingW ? (
-        <div className="panel-loading"><div className="spinner" /><p>Loading clues…</p></div>
-      ) : (
-        <>
-          {info && (
-            <div className="panel-temp-row">
-              <div>
-                <div className="panel-temp">{temp}°C</div>
-                <div className="panel-condition">{info.label.toUpperCase()}</div>
+        {loadingW ? (
+          <div className="panel-loading"><div className="spinner" /><p>Loading clues…</p></div>
+        ) : (
+          <>
+            {info && (
+              <div className="panel-temp-row">
+                <div>
+                  <div className="panel-temp">{temp}°C</div>
+                  <div className="panel-condition">{info.label.toUpperCase()}</div>
+                </div>
+                <div className="panel-icon"><WeatherIcon type={info.icon} size={72} /></div>
               </div>
-              <div className="panel-icon"><WeatherIcon type={info.icon} size={72} /></div>
-            </div>
-          )}
+            )}
 
-          {cur && (
-            <div className="stats-grid">
-              <div className="stat-card">
-                <span className="stat-label">Humidity</span>
-                <span className="stat-value">{cur.relative_humidity_2m}%</span>
+            {cur && (
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <span className="stat-label">Humidity</span>
+                  <span className="stat-value">{cur.relative_humidity_2m}%</span>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-label">Wind</span>
+                  <span className="stat-value">{Math.round(cur.wind_speed_10m)} km/h</span>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-label">Pressure</span>
+                  <span className="stat-value">{Math.round(cur.surface_pressure)} hPa</span>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-label">Visibility</span>
+                  <span className="stat-value">{(cur.visibility / 1000).toFixed(1)} km</span>
+                </div>
               </div>
-              <div className="stat-card">
-                <span className="stat-label">Wind</span>
-                <span className="stat-value">{Math.round(cur.wind_speed_10m)} km/h</span>
-              </div>
-              <div className="stat-card">
-                <span className="stat-label">Pressure</span>
-                <span className="stat-value">{Math.round(cur.surface_pressure)} hPa</span>
-              </div>
-              <div className="stat-card">
-                <span className="stat-label">Visibility</span>
-                <span className="stat-value">{(cur.visibility / 1000).toFixed(1)} km</span>
-              </div>
-            </div>
-          )}
+            )}
 
-          {daily && (
-            <>
-              <div className="forecast-header"><span>5-Day Forecast</span></div>
-              <div className="forecast-list">
-                {daily.time.map((t, i) => {
-                  const d = new Date(t + 'T00:00:00Z');
-                  const fc = getWeatherInfo(daily.weather_code[i]);
-                  const hi = Math.round(allMaxes[i]);
-                  const lo = Math.round(allMins[i]);
-                  const range = globalMax - globalMin || 1;
-                  const left  = ((lo - globalMin) / range) * 100;
-                  const width = ((hi - lo) / range) * 100;
-                  return (
-                    <div key={i} className="forecast-row">
-                      <span className="fc-day">{i === 0 ? 'TODAY' : DAYS[d.getUTCDay()]}</span>
-                      <span className="fc-icon"><WeatherIcon type={fc.icon} size={22} /></span>
-                      <div className="forecast-bar-bg">
-                        <div className="forecast-bar-fill" style={{ left: `${left}%`, width: `${Math.max(width, 6)}%` }} />
+            {daily && (
+              <>
+                <div className="forecast-header"><span>5-Day Forecast</span></div>
+                <div className="forecast-list">
+                  {daily.time.map((t, i) => {
+                    const d = new Date(t + 'T00:00:00Z');
+                    const fc = getWeatherInfo(daily.weather_code[i]);
+                    const hi = Math.round(allMaxes[i]);
+                    const lo = Math.round(allMins[i]);
+                    const range = globalMax - globalMin || 1;
+                    const left  = ((lo - globalMin) / range) * 100;
+                    const width = ((hi - lo) / range) * 100;
+                    return (
+                      <div key={i} className="forecast-row">
+                        <span className="fc-day">{i === 0 ? 'TODAY' : DAYS[d.getUTCDay()]}</span>
+                        <span className="fc-icon"><WeatherIcon type={fc.icon} size={22} /></span>
+                        <div className="forecast-bar-bg">
+                          <div className="forecast-bar-fill" style={{ left: `${left}%`, width: `${Math.max(width, 6)}%` }} />
+                        </div>
+                        <span className="fc-temps">{hi}° / {lo}°</span>
                       </div>
-                      <span className="fc-temps">{hi}° / {lo}°</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </>
-      )}
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </>
+        )}
 
-      {/* ── Hints ── */}
-      <div className="game-hints-section">
-        <div className="game-hints-title">HINTS</div>
-        <div className="game-hints-list">
-          {config.hints.map(h => {
-            const used = hintsUsed.includes(h.key);
-            return (
-              <button
-                key={h.key}
-                className={`game-hint-btn ${used ? 'used' : ''}`}
-                onClick={() => handleHint(h.key)}
-                disabled={used || status !== 'guessing'}
-              >
-                <span className="hint-label-name">{h.label}</span>
-                {used
-                  ? <span className="hint-revealed">{getHintValue(h.key, city)}</span>
-                  : <span className="hint-cost">−{h.cost} pts</span>
-                }
-              </button>
-            );
-          })}
+        <div className="game-hints-section">
+          <div className="game-hints-title">HINTS</div>
+          <div className="game-hints-list">
+            {config.hints.map(h => {
+              const used = hintsUsed.includes(h.key);
+              return (
+                <button
+                  key={h.key}
+                  className={`game-hint-btn ${used ? 'used' : ''}`}
+                  onClick={() => handleHint(h.key)}
+                  disabled={used || status !== 'guessing'}
+                >
+                  <span className="hint-label-name">{h.label}</span>
+                  {used
+                    ? <span className="hint-revealed">{getHintValue(h.key, city)}</span>
+                    : <span className="hint-cost">−{h.cost} pts</span>
+                  }
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* ── Guess input / correct result / skipped ── */}
-      {status === 'correct' ? (
-        <div className="game-result-card">
-          <div className="game-result-check">✓</div>
-          <div className="game-result-city">
-            {config.guessTarget === 'country' ? city.country : city.name}
-          </div>
-          {config.guessTarget === 'city' && (
-            <div className="game-result-country">{city.country}</div>
-          )}
-          <div className="game-result-pts">+{roundScores[roundScores.length - 1]} pts</div>
-          <button className="game-btn-primary" onClick={handleNext}>
-            {round + 1 >= TOTAL_ROUNDS ? 'See Results' : 'Next Round →'}
-          </button>
-        </div>
-      ) : status === 'skipped' ? (
-        <div className="game-skipped-card">
-          <div className="game-skipped-icon">✕</div>
-          <div className="game-skipped-label">Skipped</div>
-          <div className="game-skipped-answer">
-            {config.guessTarget === 'country' ? city.country : city.name}
-          </div>
-          {config.guessTarget === 'city' && (
-            <div className="game-skipped-sub">{city.country}</div>
-          )}
-          <div className="game-skipped-pts">+0 pts</div>
-          <button className="game-btn-primary" onClick={handleNext}>
-            {round + 1 >= TOTAL_ROUNDS ? 'See Results' : 'Next Round →'}
-          </button>
-        </div>
-      ) : (
-        <form
-          className={`game-guess-form ${status === 'wrong' ? 'shake' : ''}`}
-          onSubmit={handleSubmit}
-        >
-          {wrongCount > 0 && (
-            <div className="game-wrong-info">
-              {wrongCount} wrong guess{wrongCount > 1 ? 'es' : ''} · −{wrongCount * config.wrongPenalty} pts deducted
+      {/* ── Fixed footer: always visible input / result / skipped ── */}
+      <div className="game-footer">
+        {status === 'correct' ? (
+          <div className="game-result-card">
+            <div className="game-result-check">✓</div>
+            <div className="game-result-city">
+              {config.guessTarget === 'country' ? city.country : city.name}
             </div>
-          )}
-          <div className="game-guess-row">
-            <input
-              className={`game-guess-input ${status === 'wrong' ? 'error' : ''}`}
-              type="text"
-              placeholder={config.placeholder}
-              value={guess}
-              onChange={e => setGuess(e.target.value)}
-              autoComplete="off"
-              autoFocus
-            />
-            <button className="game-submit-btn" type="submit">GUESS</button>
+            {config.guessTarget === 'city' && (
+              <div className="game-result-country">{city.country}</div>
+            )}
+            <div className="game-result-pts">+{roundScores[roundScores.length - 1]} pts</div>
+            <button className="game-btn-primary game-btn-full" onClick={handleNext}>
+              {round + 1 >= TOTAL_ROUNDS ? 'See Results' : 'Next Round →'}
+            </button>
           </div>
-        </form>
-      )}
+        ) : status === 'skipped' ? (
+          <div className="game-skipped-card">
+            <div className="game-skipped-icon">✕</div>
+            <div className="game-skipped-label">Skipped</div>
+            <div className="game-skipped-answer">
+              {config.guessTarget === 'country' ? city.country : city.name}
+            </div>
+            {config.guessTarget === 'city' && (
+              <div className="game-skipped-sub">{city.country}</div>
+            )}
+            <div className="game-skipped-pts">+0 pts</div>
+            <button className="game-btn-primary game-btn-full" onClick={handleNext}>
+              {round + 1 >= TOTAL_ROUNDS ? 'See Results' : 'Next Round →'}
+            </button>
+          </div>
+        ) : (
+          <form
+            className={`game-guess-form ${status === 'wrong' ? 'shake' : ''}`}
+            onSubmit={handleSubmit}
+          >
+            {wrongCount > 0 && (
+              <div className="game-wrong-info">
+                {wrongCount} wrong guess{wrongCount > 1 ? 'es' : ''} · −{wrongCount * config.wrongPenalty} pts deducted
+              </div>
+            )}
+            <div className="game-guess-row">
+              <input
+                className={`game-guess-input ${status === 'wrong' ? 'error' : ''}`}
+                type="text"
+                placeholder={config.placeholder}
+                value={guess}
+                onChange={e => setGuess(e.target.value)}
+                autoComplete="off"
+                autoFocus
+              />
+              <button className="game-submit-btn" type="submit">GUESS</button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

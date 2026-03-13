@@ -841,18 +841,52 @@ html, body, #root {
   background: rgba(0,200,255,0.08);
 }
 
-/* ── Game panel (extends .weather-panel) ───────────────────────── */
+/* ── Game panel: fixed header + scrollable middle + fixed footer ── */
 .game-panel {
+  overflow: hidden;                     /* panel itself never scrolls */
+  padding: 0;                           /* sections handle their own spacing */
+  gap: 0;
   border-left-color: rgba(0,200,255,0.18);
+}
+
+/* Middle section scrolls; header and footer stay put */
+.game-scroll-content {
+  flex: 1;
+  min-height: 0;                        /* required for flex children to shrink */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
+  padding: 14px;
+}
+.game-scroll-content::-webkit-scrollbar { width: 4px; }
+.game-scroll-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Footer is always visible at the bottom */
+.game-footer {
+  flex-shrink: 0;
+  padding: 12px 14px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+  border-top: 1px solid var(--border);
+  background: var(--panel-bg);
+}
+
+/* Full-width button variant used in footers */
+.game-btn-full {
+  width: 100%;
+  margin-top: 0;
 }
 
 /* ── Game header: round dots + score ───────────────────────────── */
 .game-header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
+  margin: 12px 14px 0;
   background: rgba(0,200,255,0.05);
   border: 1px solid rgba(0,200,255,0.12);
   border-radius: var(--radius-sm);
@@ -1054,11 +1088,11 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: rgba(0,200,255,0.07);
   border: 1px solid rgba(0,200,255,0.25);
   border-radius: var(--radius);
-  padding: 24px 20px;
+  padding: 14px 16px;
   text-align: center;
 }
 .game-result-check {
@@ -1083,13 +1117,13 @@ html, body, #root {
   margin: 8px 0 4px;
 }
 
-/* ── Game over screen ───────────────────────────────────────────── */
+/* ── Game over screen (inside scroll area; actions are in footer) ── */
 .game-over-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 24px 0;
+  padding: 16px 0 8px;
   text-align: center;
 }
 .game-over-trophy { font-size: 48px; line-height: 1; }
@@ -1139,7 +1173,6 @@ html, body, #root {
 .game-over-actions {
   display: flex;
   gap: 10px;
-  margin-top: 16px;
   width: 100%;
 }
 .game-btn-primary {
@@ -1173,9 +1206,11 @@ html, body, #root {
 /* ── Game mode mobile tweaks ────────────────────────────────────── */
 @media (max-width: 768px) {
   .game-mode-btn { padding: 8px 12px; font-size: 12px; }
-  .game-panel { padding: 14px 16px; }
   .game-score-val { font-size: 16px; }
   .game-over-score { font-size: 44px; }
+  .game-header { margin: 10px 10px 0; }
+  .game-scroll-content { padding: 10px; gap: 10px; }
+  .game-footer { padding: 10px 10px max(12px, env(safe-area-inset-bottom, 12px)); }
 }
 
 /* ── Difficulty picker screen ───────────────────────────────────── */
@@ -1292,11 +1327,11 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: rgba(255,136,68,0.06);
   border: 1px solid rgba(255,136,68,0.25);
   border-radius: var(--radius);
-  padding: 24px 20px;
+  padding: 14px 16px;
   text-align: center;
 }
 .game-skipped-icon {
