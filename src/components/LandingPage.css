@@ -365,6 +365,161 @@
   line-height: 1.65;
 }
 
+/* ── Game Info ───────────────────────────────────────────── */
+.landing-game {
+  background: linear-gradient(180deg, #080d1a 0%, #0a1230 50%, #080d1a 100%);
+  padding: 100px 24px;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.game-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.game-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #3b82f6;
+  margin-bottom: 12px;
+}
+
+.game-difficulty-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 64px;
+}
+
+.game-diff-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 16px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.game-diff-card:hover {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: translateY(-3px);
+}
+
+.game-diff-icon {
+  font-size: 28px;
+  margin-bottom: 4px;
+}
+
+.game-diff-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.game-diff-target {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3b82f6;
+}
+
+.game-diff-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.6;
+  margin: 4px 0 0;
+  flex: 1;
+}
+
+.game-diff-score {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 8px;
+}
+
+.game-how-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 28px;
+  letter-spacing: -0.01em;
+}
+
+.game-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  position: relative;
+  margin-bottom: 52px;
+}
+
+.game-steps::before {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: calc(16.67% + 20px);
+  right: calc(16.67% + 20px);
+  height: 1px;
+  border-top: 2px dashed rgba(59, 130, 246, 0.25);
+  pointer-events: none;
+}
+
+.game-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 20px;
+  position: relative;
+}
+
+.game-step-num {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #3b82f6;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.game-step-icon {
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.game-step-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.game-step-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.65;
+  margin: 0;
+}
+
+.game-cta {
+  display: flex;
+  justify-content: center;
+}
+
 /* ── Regional Deep-Dive ──────────────────────────────────── */
 .landing-regional {
   background: #080d1a;
@@ -489,6 +644,14 @@
   .city-cards {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .game-difficulty-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .game-steps::before {
+    display: none;
+  }
 }
 
 @media (max-width: 768px) {
@@ -538,6 +701,15 @@
     grid-template-columns: 1fr;
   }
 
+  .game-difficulty-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .game-steps {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
   .city-cards {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -579,5 +751,9 @@
 
   .city-cards {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .game-difficulty-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -92,7 +92,12 @@ export default function App() {
   ].filter(Boolean);
 
   if (showLanding) {
-    return <LandingPage onExplore={() => setShowLanding(false)} />;
+    return (
+      <LandingPage
+        onExplore={() => setShowLanding(false)}
+        onStartGame={() => { setShowLanding(false); setGameMode(true); }}
+      />
+    );
   }
 
   return (
