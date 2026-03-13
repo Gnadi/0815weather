@@ -27,7 +27,56 @@ const CITY_CARDS = [
   },
 ];
 
-export default function LandingPage({ onExplore }) {
+const DIFFICULTIES = [
+  {
+    icon: '☀️',
+    name: 'Easy',
+    target: 'Country',
+    desc: 'Guess the country using all available hints. Perfect for beginners.',
+    score: '800 pts',
+  },
+  {
+    icon: '🌦️',
+    name: 'Moderate',
+    target: 'Country',
+    desc: 'Guess the country with limited hints — population & hemisphere only.',
+    score: '800 pts',
+  },
+  {
+    icon: '⛈️',
+    name: 'Hard',
+    target: 'City',
+    desc: 'Guess the city with full hints. Tests your global city knowledge.',
+    score: '1000 pts',
+  },
+  {
+    icon: '🌪️',
+    name: 'Extreme',
+    target: 'City',
+    desc: 'Guess the city with only hemisphere & first letter hints. For weather experts.',
+    score: '1000 pts',
+  },
+];
+
+const HOW_STEPS = [
+  {
+    icon: '🌡️',
+    title: 'Read the clues',
+    desc: 'Temperature, humidity, wind, pressure & a 5-day forecast are your only hints.',
+  },
+  {
+    icon: '💡',
+    title: 'Use hints wisely',
+    desc: 'Reveal continent, country, population & more — but each hint costs points.',
+  },
+  {
+    icon: '🏆',
+    title: 'Score big',
+    desc: 'Earn up to 1000 pts per round across 3 rounds. Beat your high score!',
+  },
+];
+
+export default function LandingPage({ onExplore, onStartGame }) {
   return (
     <div className="landing">
       {/* ── Navbar ──────────────────────────────────────────── */}
@@ -162,6 +211,45 @@ export default function LandingPage({ onExplore }) {
               <h3 className="feature-title">Global Coverage</h3>
               <p className="feature-desc">Micro-climate data for every major city and remote location across all seven continents.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Game Info ─────────────────────────────────────────── */}
+      <section className="landing-game">
+        <div className="game-inner">
+          <p className="game-label">Game Mode</p>
+          <h2 className="section-title">Challenge Your Weather IQ</h2>
+          <p className="section-sub">Use real-time weather data as clues to guess cities and countries around the globe.</p>
+
+          {/* Difficulty cards */}
+          <div className="game-difficulty-grid">
+            {DIFFICULTIES.map(d => (
+              <div key={d.name} className="game-diff-card">
+                <div className="game-diff-icon">{d.icon}</div>
+                <div className="game-diff-name">{d.name}</div>
+                <div className="game-diff-target">Guess the {d.target}</div>
+                <p className="game-diff-desc">{d.desc}</p>
+                <div className="game-diff-score">{d.score} base</div>
+              </div>
+            ))}
+          </div>
+
+          {/* How it works */}
+          <h3 className="game-how-title">How it works</h3>
+          <div className="game-steps">
+            {HOW_STEPS.map((step, i) => (
+              <div key={i} className="game-step">
+                <div className="game-step-num">{i + 1}</div>
+                <div className="game-step-icon">{step.icon}</div>
+                <div className="game-step-title">{step.title}</div>
+                <p className="game-step-desc">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="game-cta">
+            <button className="btn-primary" onClick={onStartGame}>Play Now</button>
           </div>
         </div>
       </section>
