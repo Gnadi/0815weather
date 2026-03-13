@@ -90,4 +90,4 @@ Each round starts with 1000 points. Use hints (continent, country, population, h
 
 ## Built By
 
-This project was fully designed, implemented, and built by **Claude Code** (Anthropic's AI coding agent), with a developer acting in an advisory role only — providing direction and feedback, but writing no code.
+The UI/UX was designed with **Google Stitch**. The entire implementation was then built by **Claude Code** (Anthropic's AI coding agent), with a developer acting in an advisory role only — providing direction and feedback, but writing no code.
