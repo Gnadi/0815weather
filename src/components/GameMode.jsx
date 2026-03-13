@@ -39,7 +39,7 @@ const HINTS = [
 const DIFFICULTY_CONFIG = {
   easy: {
     label: 'Easy',
-    icon: '🌤',
+    icon: '☀️',
     description: 'Guess the country',
     sub: 'All hints available · −50 pts per wrong guess',
     hints: HINTS.filter(h => h.key !== 'country'),
@@ -52,7 +52,7 @@ const DIFFICULTY_CONFIG = {
   },
   moderate: {
     label: 'Moderate',
-    icon: '🌥',
+    icon: '🌦️',
     description: 'Guess the country',
     sub: 'Fewer hints · −75 pts per wrong guess',
     hints: HINTS.filter(h => h.key === 'pop' || h.key === 'coords'),
@@ -65,7 +65,7 @@ const DIFFICULTY_CONFIG = {
   },
   hard: {
     label: 'Hard',
-    icon: '⛈',
+    icon: '⛈️',
     description: 'Guess the city',
     sub: 'All hints available · −100 pts per wrong guess',
     hints: HINTS,
@@ -78,7 +78,7 @@ const DIFFICULTY_CONFIG = {
   },
   extreme: {
     label: 'Extreme',
-    icon: '🌩',
+    icon: '🌪️',
     description: 'Guess the city',
     sub: 'Very few hints · −150 pts per wrong guess',
     hints: HINTS.filter(h => h.key === 'coords' || h.key === 'letter'),
