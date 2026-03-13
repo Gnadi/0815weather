@@ -841,18 +841,52 @@ html, body, #root {
   background: rgba(0,200,255,0.08);
 }
 
-/* ── Game panel (extends .weather-panel) ───────────────────────── */
+/* ── Game panel: fixed header + scrollable middle + fixed footer ── */
 .game-panel {
+  overflow: hidden;                     /* panel itself never scrolls */
+  padding: 0;                           /* sections handle their own spacing */
+  gap: 0;
   border-left-color: rgba(0,200,255,0.18);
+}
+
+/* Middle section scrolls; header and footer stay put */
+.game-scroll-content {
+  flex: 1;
+  min-height: 0;                        /* required for flex children to shrink */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
+  padding: 14px;
+}
+.game-scroll-content::-webkit-scrollbar { width: 4px; }
+.game-scroll-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Footer is always visible at the bottom */
+.game-footer {
+  flex-shrink: 0;
+  padding: 12px 14px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+  border-top: 1px solid rgba(255,255,255,0.09);
+  background: #0a1430; /* fully opaque — content must never bleed through */
+}
+
+/* Full-width button variant used in footers */
+.game-btn-full {
+  width: 100%;
+  margin-top: 0;
 }
 
 /* ── Game header: round dots + score ───────────────────────────── */
 .game-header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
+  margin: 12px 14px 0;
   background: rgba(0,200,255,0.05);
   border: 1px solid rgba(0,200,255,0.12);
   border-radius: var(--radius-sm);
@@ -1054,11 +1088,11 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: rgba(0,200,255,0.07);
   border: 1px solid rgba(0,200,255,0.25);
   border-radius: var(--radius);
-  padding: 24px 20px;
+  padding: 14px 16px;
   text-align: center;
 }
 .game-result-check {
@@ -1077,19 +1111,18 @@ html, body, #root {
   color: var(--subtext);
 }
 .game-result-pts {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--accent);
-  margin: 8px 0 4px;
 }
 
-/* ── Game over screen ───────────────────────────────────────────── */
+/* ── Game over screen (inside scroll area; actions are in footer) ── */
 .game-over-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 24px 0;
+  padding: 16px 0 8px;
   text-align: center;
 }
 .game-over-trophy { font-size: 48px; line-height: 1; }
@@ -1139,7 +1172,6 @@ html, body, #root {
 .game-over-actions {
   display: flex;
   gap: 10px;
-  margin-top: 16px;
   width: 100%;
 }
 .game-btn-primary {
@@ -1173,7 +1205,175 @@ html, body, #root {
 /* ── Game mode mobile tweaks ────────────────────────────────────── */
 @media (max-width: 768px) {
   .game-mode-btn { padding: 8px 12px; font-size: 12px; }
-  .game-panel { padding: 14px 16px; }
   .game-score-val { font-size: 16px; }
   .game-over-score { font-size: 44px; }
+  /* Explicitly keep game-panel layout on mobile — overrides weather-panel media query */
+  .game-panel { overflow: hidden !important; padding: 0 !important; gap: 0 !important; }
+  .game-header { margin: 10px 10px 0; }
+  .game-scroll-content { padding: 10px; gap: 10px; }
+  .game-footer { padding: 10px 10px max(12px, env(safe-area-inset-bottom, 12px)); background: #0a1430; }
+}
+
+/* ── Difficulty picker screen ───────────────────────────────────── */
+.game-difficulty-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--subtext);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+}
+.game-difficulty-cards {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+}
+.game-difficulty-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s, border-color 0.2s, transform 0.1s;
+}
+.game-difficulty-card:hover {
+  background: rgba(255,255,255,0.07);
+  transform: translateX(2px);
+}
+.game-difficulty-card:active { transform: scale(0.99); }
+
+.game-difficulty-card.easy      { border-left: 3px solid #00e87a; }
+.game-difficulty-card.easy:hover  { border-color: #00e87a; }
+.game-difficulty-card.moderate  { border-left: 3px solid #ffb84d; }
+.game-difficulty-card.moderate:hover { border-color: #ffb84d; }
+.game-difficulty-card.hard      { border-left: 3px solid #ff7744; }
+.game-difficulty-card.hard:hover  { border-color: #ff7744; }
+.game-difficulty-card.extreme   { border-left: 3px solid #ff4444; }
+.game-difficulty-card.extreme:hover { border-color: #ff4444; }
+
+.game-diff-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+/* Difficulty-specific icon backgrounds so dark emojis are always visible */
+.game-difficulty-card.easy     .game-diff-icon { background: rgba(0,232,122,0.15);  border-color: rgba(0,232,122,0.25); }
+.game-difficulty-card.moderate .game-diff-icon { background: rgba(255,184,77,0.15); border-color: rgba(255,184,77,0.25); }
+.game-difficulty-card.hard     .game-diff-icon { background: rgba(255,119,68,0.15); border-color: rgba(255,119,68,0.25); }
+.game-difficulty-card.extreme  .game-diff-icon { background: rgba(255,68,68,0.15);  border-color: rgba(255,68,68,0.25); }
+.game-diff-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.game-diff-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.game-difficulty-card.easy     .game-diff-label { color: #00e87a; }
+.game-difficulty-card.moderate .game-diff-label { color: #ffb84d; }
+.game-difficulty-card.hard     .game-diff-label { color: #ff7744; }
+.game-difficulty-card.extreme  .game-diff-label { color: #ff4444; }
+
+.game-diff-desc {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0.8;
+}
+.game-diff-sub {
+  font-size: 11px;
+  color: var(--subtext);
+  margin-top: 2px;
+}
+.game-diff-arrow {
+  font-size: 20px;
+  color: var(--subtext);
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+/* ── Skip button (in header) ────────────────────────────────────── */
+.game-skip-header-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  color: var(--subtext);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+.game-skip-header-btn:hover {
+  color: #ff8844;
+  border-color: rgba(255,136,68,0.4);
+  background: rgba(255,136,68,0.08);
+}
+
+/* ── Skipped round result card ──────────────────────────────────── */
+.game-skipped-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,136,68,0.06);
+  border: 1px solid rgba(255,136,68,0.25);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  text-align: center;
+}
+.game-skipped-icon {
+  font-size: 26px;
+  color: #ff8844;
+  font-weight: 900;
+  line-height: 1;
+}
+.game-skipped-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff8844;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.game-skipped-answer {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.game-skipped-sub {
+  font-size: 14px;
+  color: var(--subtext);
+}
+.game-skipped-pts {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--subtext);
+}
+
+/* ── Skipped annotation in breakdown ───────────────────────────── */
+.game-breakdown-skipped {
+  font-size: 11px;
+  font-weight: 500;
+  color: #ff8844;
+  margin-left: 4px;
+  opacity: 0.8;
 }

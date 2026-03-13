@@ -142,7 +142,7 @@ export default function App() {
         {gameMode ? (
           <GameMode
             key={gameModeKey}
-            onExit={() => setGameMode(false)}
+            onExit={() => { setGameMode(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             onPlayAgain={() => setGameModeKey(k => k + 1)}
           />
         ) : (
