@@ -26,7 +26,6 @@ const GAME_CITIES = [
 ];
 
 const TOTAL_ROUNDS = 3;
-const BASE_SCORE   = 1000;
 const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
 
 const HINTS = [
@@ -36,6 +35,61 @@ const HINTS = [
   { key: 'coords',    label: 'Hemisphere',   cost: 100 },
   { key: 'letter',    label: 'First Letter', cost: 150 },
 ];
+
+const DIFFICULTY_CONFIG = {
+  easy: {
+    label: 'Easy',
+    icon: '🌤',
+    description: 'Guess the country',
+    sub: 'All hints available · −50 pts per wrong guess',
+    hints: HINTS.filter(h => h.key !== 'country'),
+    wrongPenalty: 50,
+    baseScore: 800,
+    guessTarget: 'country',
+    placeholder: 'Which country is this?',
+    mysteryLabel: '??? Mystery Country',
+    mysterySubLabel: 'Identify this country from its weather data',
+  },
+  moderate: {
+    label: 'Moderate',
+    icon: '🌥',
+    description: 'Guess the country',
+    sub: 'Fewer hints · −75 pts per wrong guess',
+    hints: HINTS.filter(h => h.key === 'pop' || h.key === 'coords'),
+    wrongPenalty: 75,
+    baseScore: 800,
+    guessTarget: 'country',
+    placeholder: 'Which country is this?',
+    mysteryLabel: '??? Mystery Country',
+    mysterySubLabel: 'Identify this country from its weather data',
+  },
+  hard: {
+    label: 'Hard',
+    icon: '⛈',
+    description: 'Guess the city',
+    sub: 'All hints available · −100 pts per wrong guess',
+    hints: HINTS,
+    wrongPenalty: 100,
+    baseScore: 1000,
+    guessTarget: 'city',
+    placeholder: 'Which city is this?',
+    mysteryLabel: '??? Mystery City',
+    mysterySubLabel: 'Identify this city from its weather data',
+  },
+  extreme: {
+    label: 'Extreme',
+    icon: '🌩',
+    description: 'Guess the city',
+    sub: 'Very few hints · −150 pts per wrong guess',
+    hints: HINTS.filter(h => h.key === 'coords' || h.key === 'letter'),
+    wrongPenalty: 150,
+    baseScore: 1000,
+    guessTarget: 'city',
+    placeholder: 'Which city is this?',
+    mysteryLabel: '??? Mystery City',
+    mysterySubLabel: 'Identify this city from its weather data',
+  },
+};
 
 function getHintValue(key, city) {
   switch (key) {
@@ -62,46 +116,52 @@ function shuffle(arr) {
 }
 
 export default function GameMode({ onExit, onPlayAgain }) {
-  const [queue]                   = useState(() => shuffle(GAME_CITIES).slice(0, TOTAL_ROUNDS));
-  const [round, setRound]         = useState(0);
-  const [weather, setWeather]     = useState(null);
-  const [loadingW, setLoadingW]   = useState(true);
-  const [status, setStatus]       = useState('guessing'); // guessing | correct | wrong | gameover
-  const [guess, setGuess]         = useState('');
-  const [hintsUsed, setHintsUsed] = useState([]);
-  const [wrongCount, setWrongCount] = useState(0);
-  const [roundScore, setRoundScore] = useState(BASE_SCORE);
-  const [totalScore, setTotalScore] = useState(0);
+  const [difficulty, setDifficulty]   = useState(null);
+  const [queue]                       = useState(() => shuffle(GAME_CITIES).slice(0, TOTAL_ROUNDS));
+  const [round, setRound]             = useState(0);
+  const [weather, setWeather]         = useState(null);
+  const [loadingW, setLoadingW]       = useState(false);
+  const [status, setStatus]           = useState('guessing'); // guessing | correct | wrong | skipped | gameover
+  const [guess, setGuess]             = useState('');
+  const [hintsUsed, setHintsUsed]     = useState([]);
+  const [wrongCount, setWrongCount]   = useState(0);
+  const [roundScore, setRoundScore]   = useState(0);
+  const [totalScore, setTotalScore]   = useState(0);
   const [roundScores, setRoundScores] = useState([]);
-  const [newRecord, setNewRecord] = useState(false);
-  const [highScore]               = useState(() => parseInt(localStorage.getItem('weather_game_highscore') ?? '0', 10));
+  const [skippedRounds, setSkippedRounds] = useState([]);
+  const [newRecord, setNewRecord]     = useState(false);
+  const [highScore]                   = useState(() => parseInt(localStorage.getItem('weather_game_highscore') ?? '0', 10));
 
-  const city = queue[round];
+  const city   = queue[round];
+  const config = difficulty ? DIFFICULTY_CONFIG[difficulty] : null;
 
   useEffect(() => {
+    if (!difficulty) return;
     setLoadingW(true);
     setWeather(null);
     setStatus('guessing');
     setGuess('');
     setHintsUsed([]);
     setWrongCount(0);
-    setRoundScore(BASE_SCORE);
+    setRoundScore(config.baseScore);
     fetchWeather(city.lat, city.lon)
       .then(w => { setWeather(w); setLoadingW(false); })
       .catch(() => setLoadingW(false));
-  }, [round]);
+  }, [round, difficulty]);
 
   function handleHint(hintKey) {
     if (hintsUsed.includes(hintKey) || status !== 'guessing') return;
-    const cost = HINTS.find(h => h.key === hintKey).cost;
+    const hint = config.hints.find(h => h.key === hintKey);
+    if (!hint) return;
     setHintsUsed(prev => [...prev, hintKey]);
-    setRoundScore(prev => Math.max(0, prev - cost));
+    setRoundScore(prev => Math.max(0, prev - hint.cost));
   }
 
   function handleSubmit(e) {
     e?.preventDefault();
     if (!guess.trim() || status !== 'guessing') return;
-    if (normalize(guess) === normalize(city.name)) {
+    const answer = config.guessTarget === 'country' ? city.country : city.name;
+    if (normalize(guess) === normalize(answer)) {
       setStatus('correct');
       const earned = roundScore;
       setRoundScores(prev => [...prev, earned]);
@@ -115,15 +175,53 @@ export default function GameMode({ onExit, onPlayAgain }) {
       });
     } else {
       setWrongCount(w => w + 1);
-      setRoundScore(prev => Math.max(0, prev - 50));
+      setRoundScore(prev => Math.max(0, prev - config.wrongPenalty));
       setStatus('wrong');
       setTimeout(() => { setStatus('guessing'); setGuess(''); }, 700);
     }
   }
 
+  function handleSkip() {
+    if (status !== 'guessing') return;
+    setSkippedRounds(prev => [...prev, round]);
+    setRoundScores(prev => [...prev, 0]);
+    setStatus('skipped');
+  }
+
   function handleNext() {
     if (round + 1 >= TOTAL_ROUNDS) setStatus('gameover');
     else setRound(r => r + 1);
+  }
+
+  // ── Difficulty picker ──────────────────────────────────────────────
+  if (!difficulty) {
+    return (
+      <div className="weather-panel game-panel">
+        <div className="game-difficulty-screen">
+          <div className="game-difficulty-title">Choose Difficulty</div>
+          <div className="game-difficulty-cards">
+            {Object.entries(DIFFICULTY_CONFIG).map(([key, cfg]) => (
+              <button
+                key={key}
+                className={`game-difficulty-card ${key}`}
+                onClick={() => setDifficulty(key)}
+              >
+                <span className="game-diff-icon">{cfg.icon}</span>
+                <div className="game-diff-text">
+                  <span className="game-diff-label">{cfg.label}</span>
+                  <span className="game-diff-desc">{cfg.description}</span>
+                  <span className="game-diff-sub">{cfg.sub}</span>
+                </div>
+                <span className="game-diff-arrow">›</span>
+              </button>
+            ))}
+          </div>
+          <button className="game-btn-secondary" style={{ width: '100%', marginTop: 8 }} onClick={onExit}>
+            Exit
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // ── Game over screen ──────────────────────────────────────────────
@@ -138,12 +236,19 @@ export default function GameMode({ onExit, onPlayAgain }) {
           <div className="game-over-highscore">Best: {best} pts</div>
 
           <div className="game-rounds-breakdown">
-            {roundScores.map((s, i) => (
-              <div key={i} className="game-breakdown-row">
-                <span className="game-breakdown-city">{queue[i].name}</span>
-                <span className="game-breakdown-pts">{s} pts</span>
-              </div>
-            ))}
+            {roundScores.map((s, i) => {
+              const wasSkipped = skippedRounds.includes(i);
+              const answerLabel = config.guessTarget === 'country' ? queue[i].country : queue[i].name;
+              return (
+                <div key={i} className="game-breakdown-row">
+                  <span className="game-breakdown-city">
+                    {answerLabel}
+                    {wasSkipped && <span className="game-breakdown-skipped"> (skipped)</span>}
+                  </span>
+                  <span className="game-breakdown-pts">{s} pts</span>
+                </div>
+              );
+            })}
           </div>
 
           <div className="game-over-actions">
@@ -189,15 +294,15 @@ export default function GameMode({ onExit, onPlayAgain }) {
         </div>
       </div>
 
-      {/* ── Mystery city placeholder ── */}
+      {/* ── Mystery placeholder ── */}
       <div className="panel-header">
         <div>
-          <h2 className="panel-city game-mystery-name">??? Mystery City</h2>
-          <p className="panel-country game-mystery-sub">Identify this city from its weather data</p>
+          <h2 className="panel-city game-mystery-name">{config.mysteryLabel}</h2>
+          <p className="panel-country game-mystery-sub">{config.mysterySubLabel}</p>
         </div>
       </div>
 
-      {/* ── Weather data (no city name) ── */}
+      {/* ── Weather data ── */}
       {loadingW ? (
         <div className="panel-loading"><div className="spinner" /><p>Loading clues…</p></div>
       ) : (
@@ -266,7 +371,7 @@ export default function GameMode({ onExit, onPlayAgain }) {
       <div className="game-hints-section">
         <div className="game-hints-title">HINTS</div>
         <div className="game-hints-list">
-          {HINTS.map(h => {
+          {config.hints.map(h => {
             const used = hintsUsed.includes(h.key);
             return (
               <button
@@ -286,13 +391,32 @@ export default function GameMode({ onExit, onPlayAgain }) {
         </div>
       </div>
 
-      {/* ── Guess input or correct result ── */}
+      {/* ── Guess input / correct result / skipped ── */}
       {status === 'correct' ? (
         <div className="game-result-card">
           <div className="game-result-check">✓</div>
-          <div className="game-result-city">{city.name}</div>
-          <div className="game-result-country">{city.country}</div>
+          <div className="game-result-city">
+            {config.guessTarget === 'country' ? city.country : city.name}
+          </div>
+          {config.guessTarget === 'city' && (
+            <div className="game-result-country">{city.country}</div>
+          )}
           <div className="game-result-pts">+{roundScores[roundScores.length - 1]} pts</div>
+          <button className="game-btn-primary" onClick={handleNext}>
+            {round + 1 >= TOTAL_ROUNDS ? 'See Results' : 'Next Round →'}
+          </button>
+        </div>
+      ) : status === 'skipped' ? (
+        <div className="game-skipped-card">
+          <div className="game-skipped-icon">✕</div>
+          <div className="game-skipped-label">Skipped</div>
+          <div className="game-skipped-answer">
+            {config.guessTarget === 'country' ? city.country : city.name}
+          </div>
+          {config.guessTarget === 'city' && (
+            <div className="game-skipped-sub">{city.country}</div>
+          )}
+          <div className="game-skipped-pts">+0 pts</div>
           <button className="game-btn-primary" onClick={handleNext}>
             {round + 1 >= TOTAL_ROUNDS ? 'See Results' : 'Next Round →'}
           </button>
@@ -304,14 +428,14 @@ export default function GameMode({ onExit, onPlayAgain }) {
         >
           {wrongCount > 0 && (
             <div className="game-wrong-info">
-              {wrongCount} wrong guess{wrongCount > 1 ? 'es' : ''} · −{wrongCount * 50} pts deducted
+              {wrongCount} wrong guess{wrongCount > 1 ? 'es' : ''} · −{wrongCount * config.wrongPenalty} pts deducted
             </div>
           )}
           <div className="game-guess-row">
             <input
               className={`game-guess-input ${status === 'wrong' ? 'error' : ''}`}
               type="text"
-              placeholder="Which city is this?"
+              placeholder={config.placeholder}
               value={guess}
               onChange={e => setGuess(e.target.value)}
               autoComplete="off"
@@ -319,6 +443,9 @@ export default function GameMode({ onExit, onPlayAgain }) {
             />
             <button className="game-submit-btn" type="submit">GUESS</button>
           </div>
+          <button className="game-skip-btn" type="button" onClick={handleSkip}>
+            Skip this round
+          </button>
         </form>
       )}
     </div>

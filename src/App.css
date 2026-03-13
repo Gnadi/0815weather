@@ -1177,3 +1177,163 @@ html, body, #root {
   .game-score-val { font-size: 16px; }
   .game-over-score { font-size: 44px; }
 }
+
+/* ── Difficulty picker screen ───────────────────────────────────── */
+.game-difficulty-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0 8px;
+  width: 100%;
+}
+.game-difficulty-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--subtext);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.game-difficulty-cards {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+}
+.game-difficulty-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s, border-color 0.2s, transform 0.1s;
+}
+.game-difficulty-card:hover {
+  background: rgba(255,255,255,0.07);
+  transform: translateX(2px);
+}
+.game-difficulty-card:active { transform: scale(0.99); }
+
+.game-difficulty-card.easy      { border-left: 3px solid #00e87a; }
+.game-difficulty-card.easy:hover  { border-color: #00e87a; }
+.game-difficulty-card.moderate  { border-left: 3px solid #ffb84d; }
+.game-difficulty-card.moderate:hover { border-color: #ffb84d; }
+.game-difficulty-card.hard      { border-left: 3px solid #ff7744; }
+.game-difficulty-card.hard:hover  { border-color: #ff7744; }
+.game-difficulty-card.extreme   { border-left: 3px solid #ff4444; }
+.game-difficulty-card.extreme:hover { border-color: #ff4444; }
+
+.game-diff-icon {
+  font-size: 26px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.game-diff-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.game-diff-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.game-difficulty-card.easy     .game-diff-label { color: #00e87a; }
+.game-difficulty-card.moderate .game-diff-label { color: #ffb84d; }
+.game-difficulty-card.hard     .game-diff-label { color: #ff7744; }
+.game-difficulty-card.extreme  .game-diff-label { color: #ff4444; }
+
+.game-diff-desc {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0.8;
+}
+.game-diff-sub {
+  font-size: 11px;
+  color: var(--subtext);
+  margin-top: 2px;
+}
+.game-diff-arrow {
+  font-size: 20px;
+  color: var(--subtext);
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+/* ── Skip button ────────────────────────────────────────────────── */
+.game-skip-btn {
+  width: 100%;
+  padding: 9px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--subtext);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  margin-top: 4px;
+}
+.game-skip-btn:hover {
+  color: #ff8844;
+  border-color: rgba(255,136,68,0.35);
+  background: rgba(255,136,68,0.06);
+}
+
+/* ── Skipped round result card ──────────────────────────────────── */
+.game-skipped-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,136,68,0.06);
+  border: 1px solid rgba(255,136,68,0.25);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  text-align: center;
+}
+.game-skipped-icon {
+  font-size: 26px;
+  color: #ff8844;
+  font-weight: 900;
+  line-height: 1;
+}
+.game-skipped-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff8844;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.game-skipped-answer {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.game-skipped-sub {
+  font-size: 14px;
+  color: var(--subtext);
+}
+.game-skipped-pts {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--subtext);
+  margin: 6px 0 4px;
+}
+
+/* ── Skipped annotation in breakdown ───────────────────────────── */
+.game-breakdown-skipped {
+  font-size: 11px;
+  font-weight: 500;
+  color: #ff8844;
+  margin-left: 4px;
+  opacity: 0.8;
+}
