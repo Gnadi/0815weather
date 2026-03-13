@@ -1214,20 +1214,13 @@ html, body, #root {
 }
 
 /* ── Difficulty picker screen ───────────────────────────────────── */
-.game-difficulty-screen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 0 8px;
-  width: 100%;
-}
 .game-difficulty-title {
   font-size: 11px;
   font-weight: 700;
   color: var(--subtext);
   letter-spacing: 1px;
   text-transform: uppercase;
+  text-align: center;
 }
 .game-difficulty-cards {
   display: flex;

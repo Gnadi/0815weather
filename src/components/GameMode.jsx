@@ -125,6 +125,7 @@ export default function GameMode({ onExit, onPlayAgain }) {
   const [guess, setGuess]                 = useState('');
   const [hintsUsed, setHintsUsed]         = useState([]);
   const [wrongCount, setWrongCount]       = useState(0);
+  const [wrongDeducted, setWrongDeducted] = useState(0); // actual pts lost (clamped)
   const [roundScore, setRoundScore]       = useState(0);
   const [totalScore, setTotalScore]       = useState(0);
   const [roundScores, setRoundScores]     = useState([]);
@@ -142,6 +143,7 @@ export default function GameMode({ onExit, onPlayAgain }) {
     setGuess('');
     setHintsUsed([]);
     setWrongCount(0);
+    setWrongDeducted(0);
     setRoundScore(config.baseScore);
     fetchWeather(city.lat, city.lon)
       .then(w => { setWeather(w); setLoadingW(false); })
@@ -173,8 +175,10 @@ export default function GameMode({ onExit, onPlayAgain }) {
         return next;
       });
     } else {
-      const newScore = Math.max(0, roundScore - config.wrongPenalty);
+      const actualDeduction = Math.min(roundScore, config.wrongPenalty);
+      const newScore = roundScore - actualDeduction;
       setWrongCount(w => w + 1);
+      setWrongDeducted(d => d + actualDeduction);
       setRoundScore(newScore);
       setStatus('wrong');
       if (newScore <= 0) {
@@ -452,7 +456,7 @@ export default function GameMode({ onExit, onPlayAgain }) {
           >
             {wrongCount > 0 && (
               <div className="game-wrong-info">
-                {wrongCount} wrong guess{wrongCount > 1 ? 'es' : ''} · −{wrongCount * config.wrongPenalty} pts deducted
+                {wrongCount} wrong guess{wrongCount > 1 ? 'es' : ''} · −{wrongDeducted} pts deducted
               </div>
             )}
             <div className="game-guess-row">
