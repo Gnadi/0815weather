@@ -1223,21 +1223,31 @@ html, body, #root {
   .app.game-active .topbar { display: none; }
   .app.game-active .ticker-bar { display: none; }
   .app.game-active .globe-area { display: none; }
+  .app.game-active .main-content {
+    height: 100vh;
+    height: 100dvh;
+  }
   .app.game-active .game-panel {
     width: 100%;
-    height: 100vh;
+    height: 100%;
+    max-height: 100vh;
+    max-height: 100dvh;
     border: none;
-    flex: 1;
+    flex: 1 1 0;
+    overflow: hidden !important;
   }
 
   /* Globe toggle visible — show globe above game panel */
   .app.game-active.game-globe-visible .globe-area {
     display: flex;
     flex: 0 0 35vh;
+    flex: 0 0 35dvh;
     min-height: 160px;
   }
   .app.game-active.game-globe-visible .game-panel {
     height: auto;
+    max-height: 65vh;
+    max-height: 65dvh;
   }
 
   /* Globe toggle button — visible on mobile only */
