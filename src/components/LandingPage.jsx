@@ -150,7 +150,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
               className="hero-globe-img"
               src="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
               alt="Earth globe"
-              fetchpriority="high"
+              fetchPriority="high"
               loading="eager"
               decoding="sync"
               width="380"
