@@ -5,25 +5,25 @@ const CITY_CARDS = [
     name: 'Tokyo',
     condition: 'Clear Sky',
     temp: '24°C',
-    img: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80',
+    img: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80&fm=webp',
   },
   {
     name: 'New York',
     condition: 'Cloudy',
     temp: '18°C',
-    img: 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?w=400&q=80',
+    img: 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?w=400&q=80&fm=webp',
   },
   {
     name: 'London',
     condition: 'Raining',
     temp: '15°C',
-    img: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400&q=80',
+    img: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400&q=80&fm=webp',
   },
   {
     name: 'Dubai',
     condition: 'Sunny',
     temp: '34°C',
-    img: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400&q=80',
+    img: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400&q=80&fm=webp',
   },
 ];
 
@@ -145,7 +145,18 @@ export default function LandingPage({ onExplore, onStartGame }) {
           </div>
 
           {/* Globe visual */}
-          <div className="hero-globe" />
+          <div className="hero-globe">
+            <img
+              className="hero-globe-img"
+              src="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+              alt="Earth globe"
+              fetchpriority="high"
+              loading="eager"
+              decoding="sync"
+              width="380"
+              height="380"
+            />
+          </div>
         </div>
 
         {/* Hero text */}
