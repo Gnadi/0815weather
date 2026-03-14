@@ -43,6 +43,10 @@
     <!-- ── PWA manifest ──────────────────────────────────────────── -->
     <link rel="manifest" href="/manifest.json" />
 
+    <!-- ── LCP image preload ─────────────────────────────────────── -->
+    <link rel="preconnect" href="https://unpkg.com" crossorigin />
+    <link rel="preload" as="image" href="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg" fetchpriority="high" />
+
     <!-- ── DNS prefetch & preconnect ─────────────────────────────── -->
     <link rel="preconnect" href="https://api.open-meteo.com" />
     <link rel="dns-prefetch" href="https://api.open-meteo.com" />
