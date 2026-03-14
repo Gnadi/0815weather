@@ -177,6 +177,10 @@ const Globe = forwardRef(function Globe(
   const weatherGridRef       = useRef(null);   // fetched grid data
   const weatherFetchedAtRef  = useRef(0);      // timestamp for 30-min refresh
 
+  // Cached mount dimensions — updated on init and resize to avoid
+  // getBoundingClientRect() calls in hot RAF paths
+  const mountSizeRef = useRef({ w: 0, h: 0 });
+
   // Keep layerModeRef in sync with prop
   useEffect(() => { layerModeRef.current = layerMode; }, [layerMode]);
   useEffect(() => { weatherLayerRef.current = weatherLayer; }, [weatherLayer]);
@@ -195,6 +199,7 @@ const Globe = forwardRef(function Globe(
     const mount = mountRef.current;
     const W = mount.clientWidth;
     const H = mount.clientHeight;
+    mountSizeRef.current = { w: W, h: H };
 
     // Scene
     const scene = new THREE.Scene();
@@ -413,6 +418,7 @@ const Globe = forwardRef(function Globe(
     function onResize() {
       const W = mount.clientWidth;
       const H = mount.clientHeight;
+      mountSizeRef.current = { w: W, h: H };
       camera.aspect = W / H;
       camera.updateProjectionMatrix();
       renderer.setSize(W, H);
@@ -521,7 +527,7 @@ function CityLabels({ globeRef, cameraRef, mountRef, selectedLocation, cityLabel
     function update() {
       frameId = requestAnimationFrame(update);
       const labels = mount.querySelectorAll('.city-label');
-      const rect   = mount.getBoundingClientRect();
+      const { w, h } = mountSizeRef.current;
       labels.forEach(el => {
         const lat = +el.dataset.lat, lon = +el.dataset.lon;
         latLonToVec3(lat, lon, EARTH_RADIUS * 1.06, _pos);
@@ -531,9 +537,10 @@ function CityLabels({ globeRef, cameraRef, mountRef, selectedLocation, cityLabel
         if (_pos.clone().normalize().dot(_camDir) > 0) { el.style.opacity = '0'; return; }
 
         _pos.project(camera);
-        el.style.left    = `${(_pos.x * 0.5 + 0.5) * rect.width}px`;
-        el.style.top     = `${(1 - (_pos.y * 0.5 + 0.5)) * rect.height}px`;
-        el.style.opacity = '1';
+        const x = (_pos.x * 0.5 + 0.5) * w;
+        const y = (1 - (_pos.y * 0.5 + 0.5)) * h;
+        el.style.transform = `translate(calc(${x}px - 50%), calc(${y}px - 50%))`;
+        el.style.opacity   = '1';
       });
     }
     update();
