@@ -1244,6 +1244,7 @@ html, body, #root {
     flex: 0 0 35dvh;
     min-height: 160px;
   }
+  .app.game-active .globe-controls-wrapper { display: none; }
   .app.game-active.game-globe-visible .game-panel {
     height: auto;
     max-height: 65vh;

@@ -170,7 +170,10 @@ export default function App() {
             onExit={() => { setGameMode(false); setShowGlobeInGame(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             onPlayAgain={() => setGameModeKey(k => k + 1)}
             showGlobe={showGlobeInGame}
-            onToggleGlobe={() => setShowGlobeInGame(g => !g)}
+            onToggleGlobe={() => {
+              setShowGlobeInGame(g => !g);
+              setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+            }}
           />
         ) : (
           <WeatherPanel
