@@ -89,7 +89,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
             <path d="M4.5 7.5 Q12 9 19.5 7.5" stroke="#3b82f6" strokeWidth="1.2" fill="none"/>
             <path d="M4.5 16.5 Q12 15 19.5 16.5" stroke="#3b82f6" strokeWidth="1.2" fill="none"/>
           </svg>
-          <span className="landing-logo-text">Weather World</span>
+          <span className="landing-logo-text">Weather Globe</span>
         </div>
 
         <div className="landing-nav-links">
@@ -159,7 +159,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
             hyper-local insights powered by global satellite networks.
           </p>
           <div className="hero-ctas">
-            <button className="btn-primary" onClick={onExplore}>Explore the Globe</button>
+            <button className="btn-primary" onClick={onExplore} onMouseEnter={() => import('./Globe')}>Explore the Globe</button>
             <button className="btn-ghost">Watch Video Tour</button>
           </div>
         </div>
@@ -288,7 +288,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
               <ellipse cx="12" cy="12" rx="4.5" ry="10" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5"/>
               <line x1="2" y1="12" x2="22" y2="12" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5"/>
             </svg>
-            <span>Weather World</span>
+            <span>Weather Globe</span>
           </div>
           <div className="footer-links">
             <a href="#" className="footer-link">Privacy Policy</a>
@@ -296,7 +296,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
             <a href="#" className="footer-link">API Access</a>
             <a href="#" className="footer-link">Contact</a>
           </div>
-          <div className="footer-copy">© 2024 Weather World. Satellite Imagery by GlobaNet.</div>
+          <div className="footer-copy">© 2026 Weather Globe. Satellite Imagery by GlobaNet.</div>
         </div>
       </footer>
     </div>

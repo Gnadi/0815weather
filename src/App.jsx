@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import Globe from './components/Globe';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import WeatherPanel from './components/WeatherPanel';
 import GameMode from './components/GameMode';
 import SearchBar from './components/SearchBar';
@@ -7,7 +6,9 @@ import DateTime from './components/DateTime';
 import WeatherTicker from './components/WeatherTicker';
 import GlobeControls from './components/GlobeControls';
 import LandingPage from './components/LandingPage';
-import { fetchWeather, reverseGeocode, TICKER_CITIES } from './utils/api';
+import { fetchWeather, reverseGeocode, searchCities, TICKER_CITIES } from './utils/api';
+
+const Globe = React.lazy(() => import('./components/Globe'));
 import { useFavourites } from './hooks/useFavourites';
 
 const DEFAULT_LOCATION = { lat: 51.5074, lon: -0.1278, city: 'London', country: 'United Kingdom' };
@@ -56,9 +57,25 @@ export default function App() {
     }
   }, []);
 
-  // Initial load
+  // Initial load — also handles ?q=<city> URL param for JSON-LD SearchAction
   useEffect(() => {
-    loadWeather(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon, DEFAULT_LOCATION.city, DEFAULT_LOCATION.country);
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('q');
+    if (query) {
+      searchCities(query).then(results => {
+        if (results.length > 0) {
+          const first = results[0];
+          setShowLanding(false);
+          loadWeather(first.latitude, first.longitude, first.name, first.country);
+        } else {
+          loadWeather(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon, DEFAULT_LOCATION.city, DEFAULT_LOCATION.country);
+        }
+      }).catch(() => {
+        loadWeather(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon, DEFAULT_LOCATION.city, DEFAULT_LOCATION.country);
+      });
+    } else {
+      loadWeather(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon, DEFAULT_LOCATION.city, DEFAULT_LOCATION.country);
+    }
   }, []);
 
   // Load ticker city temps for globe labels
@@ -122,15 +139,17 @@ export default function App() {
       {/* Main content */}
       <main className="main-content">
         <div className="globe-area">
-          <Globe
-            ref={globeRef}
-            onLocationSelect={onLocationSelect}
-            selectedLocation={location}
-            cityLabels={cityLabels}
-            layerMode={layerMode}
-            weatherLayer={weatherLayer}
-            onWeatherLoading={setWeatherGridLoading}
-          />
+          <React.Suspense fallback={<div className="globe-mount" style={{ background: 'var(--bg)' }} />}>
+            <Globe
+              ref={globeRef}
+              onLocationSelect={onLocationSelect}
+              selectedLocation={location}
+              cityLabels={cityLabels}
+              layerMode={layerMode}
+              weatherLayer={weatherLayer}
+              onWeatherLoading={setWeatherGridLoading}
+            />
+          </React.Suspense>
           <GlobeControls
             onZoomIn={() => globeRef.current?.zoomIn()}
             onZoomOut={() => globeRef.current?.zoomOut()}

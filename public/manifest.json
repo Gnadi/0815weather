@@ -1,0 +1,20 @@
+{
+  "name": "Weather Globe",
+  "short_name": "Weather Globe",
+  "description": "Explore real-time global weather on an interactive 3D globe. Search any city for live temperature, wind, humidity, and 5-day forecasts. Play the Weather IQ guessing game.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#080d1a",
+  "theme_color": "#080d1a",
+  "lang": "en",
+  "categories": ["weather", "travel", "games"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

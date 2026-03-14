@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="bg" cx="30%" cy="40%">
+      <stop offset="0%" stop-color="#0d1f4a"/>
+      <stop offset="60%" stop-color="#080d1a"/>
+    </radialGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Globe icon -->
+  <g transform="translate(140,215) scale(8.3)">
+    <circle cx="12" cy="12" r="10" stroke="#3b82f6" stroke-width="1.5" fill="none"/>
+    <ellipse cx="12" cy="12" rx="4.5" ry="10" stroke="#3b82f6" stroke-width="1.5" fill="none"/>
+    <line x1="2" y1="12" x2="22" y2="12" stroke="#3b82f6" stroke-width="1.5"/>
+    <path d="M4.5 7.5 Q12 9 19.5 7.5" stroke="#3b82f6" stroke-width="1.2" fill="none"/>
+    <path d="M4.5 16.5 Q12 15 19.5 16.5" stroke="#3b82f6" stroke-width="1.2" fill="none"/>
+  </g>
+  <!-- Headline -->
+  <text x="420" y="260" font-family="system-ui, sans-serif" font-size="72" font-weight="800" fill="#ffffff">Weather Globe</text>
+  <!-- Subline -->
+  <text x="420" y="340" font-family="system-ui, sans-serif" font-size="32" fill="rgba(255,255,255,0.6)">Real-time global weather on a 3D globe</text>
+  <!-- URL -->
+  <text x="420" y="420" font-family="system-ui, sans-serif" font-size="24" fill="#3b82f6">0815weather.com</text>
+</svg>
