@@ -24,6 +24,7 @@ export default function App() {
   const { favourites, addFavourite, removeFavourite, isFavourite } = useFavourites();
   const [gameMode, setGameMode]     = useState(false);
   const [gameModeKey, setGameModeKey] = useState(0);
+  const [showGlobeInGame, setShowGlobeInGame] = useState(false);
 
   // Layer toggle: cycles through plain → borders → capitals → cities
   const LAYER_CYCLE = ['plain', 'borders', 'capitals', 'cities'];
@@ -118,7 +119,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app${gameMode ? ' game-active' : ''}${gameMode && showGlobeInGame ? ' game-globe-visible' : ''}`}>
       {/* Top bar */}
       <header className="topbar">
         <SearchBar onCitySelect={onCitySelect} />
@@ -166,8 +167,10 @@ export default function App() {
         {gameMode ? (
           <GameMode
             key={gameModeKey}
-            onExit={() => { setGameMode(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onExit={() => { setGameMode(false); setShowGlobeInGame(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             onPlayAgain={() => setGameModeKey(k => k + 1)}
+            showGlobe={showGlobeInGame}
+            onToggleGlobe={() => setShowGlobeInGame(g => !g)}
           />
         ) : (
           <WeatherPanel
