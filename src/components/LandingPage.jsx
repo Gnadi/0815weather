@@ -263,8 +263,17 @@ export default function LandingPage({ onExplore, onStartGame }) {
               <div
                 key={city.name}
                 className="city-card"
-                style={{ backgroundImage: `url(${city.img})` }}
               >
+                <img
+                  className="city-card-img"
+                  src={city.img}
+                  alt={city.name}
+                  loading="lazy"
+                  fetchpriority="low"
+                  decoding="async"
+                  width="400"
+                  height="220"
+                />
                 <div className="city-card-overlay" />
                 <div className="city-card-content">
                   <span className="city-card-name">{city.name}</span>
