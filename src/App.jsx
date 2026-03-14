@@ -167,7 +167,7 @@ export default function App() {
         {gameMode ? (
           <GameMode
             key={gameModeKey}
-            onExit={() => { setGameMode(false); setShowGlobeInGame(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onExit={() => { setGameMode(false); setShowGlobeInGame(false); window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => window.dispatchEvent(new Event('resize')), 50); }}
             onPlayAgain={() => setGameModeKey(k => k + 1)}
             showGlobe={showGlobeInGame}
             onToggleGlobe={() => {
