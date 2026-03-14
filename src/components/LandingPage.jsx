@@ -159,7 +159,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
             hyper-local insights powered by global satellite networks.
           </p>
           <div className="hero-ctas">
-            <button className="btn-primary" onClick={onExplore}>Explore the Globe</button>
+            <button className="btn-primary" onClick={onExplore} onMouseEnter={() => import('./Globe')}>Explore the Globe</button>
             <button className="btn-ghost">Watch Video Tour</button>
           </div>
         </div>

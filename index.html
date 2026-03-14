@@ -1,12 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- ── Character encoding & viewport ─────────────────────────── -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weather Globe</title>
+
+    <!-- ── Primary meta ──────────────────────────────────────────── -->
+    <title>Weather Globe – Real-Time 3D Weather Map &amp; Forecast</title>
+    <meta name="description" content="Explore real-time global weather on an interactive 3D globe. Search any city for live temperature, wind, humidity, and 5-day forecasts. Play the Weather IQ guessing game." />
+    <meta name="keywords" content="weather, weather map, 3D globe, real-time weather, forecast, wind, temperature, humidity, weather game, global weather" />
+    <meta name="author" content="Weather Globe" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#080d1a" />
+
+    <!-- ── Canonical URL ─────────────────────────────────────────── -->
+    <link rel="canonical" href="https://0815weather.com/" />
+
+    <!-- ── Open Graph ────────────────────────────────────────────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Weather Globe" />
+    <meta property="og:title" content="Weather Globe – Real-Time 3D Weather Map &amp; Forecast" />
+    <meta property="og:description" content="Explore real-time global weather on an interactive 3D globe. Search any city for live temperature, wind, humidity, and 5-day forecasts. Play the Weather IQ guessing game." />
+    <meta property="og:url" content="https://0815weather.com/" />
+    <meta property="og:image" content="https://0815weather.com/og-image.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Weather Globe – 3D interactive weather map" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- ── Twitter / X Card ──────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Weather Globe – Real-Time 3D Weather Map &amp; Forecast" />
+    <meta name="twitter:description" content="Explore real-time global weather on an interactive 3D globe. Search any city for live temperature, wind, humidity, and 5-day forecasts." />
+    <meta name="twitter:image" content="https://0815weather.com/og-image.svg" />
+    <meta name="twitter:image:alt" content="Weather Globe – 3D interactive weather map" />
+
+    <!-- ── Favicon & icons ───────────────────────────────────────── -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- ── PWA manifest ──────────────────────────────────────────── -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- ── DNS prefetch & preconnect ─────────────────────────────── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://api.open-meteo.com" />
+    <link rel="dns-prefetch" href="https://api.open-meteo.com" />
+    <link rel="preconnect" href="https://geocoding-api.open-meteo.com" />
+    <link rel="dns-prefetch" href="https://geocoding-api.open-meteo.com" />
+    <link rel="dns-prefetch" href="https://nominatim.openstreetmap.org" />
+
+    <!-- ── Google Fonts ──────────────────────────────────────────── -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <!-- ── JSON-LD Structured Data ───────────────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://0815weather.com/#website",
+          "url": "https://0815weather.com/",
+          "name": "Weather Globe",
+          "description": "Explore real-time global weather on an interactive 3D globe.",
+          "inLanguage": "en-US",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://0815weather.com/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://0815weather.com/#webapp",
+          "name": "Weather Globe",
+          "url": "https://0815weather.com/",
+          "description": "Interactive 3D globe showing real-time global weather data. Search any city for live temperature, wind speed, humidity, surface pressure, visibility, and 5-day forecasts. Includes a weather guessing game.",
+          "applicationCategory": "WeatherApplication",
+          "operatingSystem": "Web browser",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "Real-time global weather data",
+            "Interactive 3D globe powered by Three.js",
+            "City search with autocomplete",
+            "5-day weather forecast",
+            "Temperature, wind speed, humidity and pressure stats",
+            "Weather overlay layers (temperature, rain, wind)",
+            "Weather IQ guessing game with 4 difficulty levels",
+            "Favourite cities list"
+          ],
+          "inLanguage": "en-US",
+          "isAccessibleForFree": true,
+          "screenshot": "https://0815weather.com/og-image.svg"
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
