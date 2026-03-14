@@ -1203,6 +1203,11 @@ html, body, #root {
 }
 .game-btn-secondary:hover { color: var(--text); background: rgba(255,255,255,0.09); }
 
+/* ── Globe toggle button (game header) — hidden on desktop ─────── */
+.game-globe-toggle {
+  display: none;
+}
+
 /* ── Game mode mobile tweaks ────────────────────────────────────── */
 @media (max-width: 768px) {
   .game-mode-btn { padding: 8px 12px; font-size: 12px; }
@@ -1213,6 +1218,59 @@ html, body, #root {
   .game-header { margin: 10px 10px 0; }
   .game-scroll-content { padding: 10px; gap: 10px; }
   .game-footer { padding: 10px 10px max(12px, env(safe-area-inset-bottom, 12px)); background: #0a1430; }
+
+  /* ── Mobile fullscreen game ─────────────────────────────────── */
+  .app.game-active .topbar { display: none; }
+  .app.game-active .ticker-bar { display: none; }
+  .app.game-active .globe-area { display: none; }
+  .app.game-active .main-content {
+    height: 100vh;
+    height: 100dvh;
+  }
+  .app.game-active .game-panel {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border: none;
+    flex: 1 1 0;
+    overflow: hidden !important;
+  }
+
+  /* Globe toggle visible — show globe above game panel */
+  .app.game-active.game-globe-visible .globe-area {
+    display: flex;
+    flex: 0 0 35vh;
+    flex: 0 0 35dvh;
+    min-height: 160px;
+  }
+  .app.game-active .globe-controls-wrapper { display: none; }
+  .app.game-active.game-globe-visible .game-panel {
+    height: auto;
+    max-height: 65vh;
+    max-height: 65dvh;
+  }
+
+  /* Globe toggle button — visible on mobile only */
+  .game-globe-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    color: var(--subtext);
+    flex-shrink: 0;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .game-globe-toggle.active {
+    color: var(--accent);
+    border-color: rgba(0,200,255,0.4);
+    background: rgba(0,200,255,0.08);
+  }
 }
 
 /* ── Difficulty picker screen ───────────────────────────────────── */

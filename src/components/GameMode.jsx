@@ -115,7 +115,7 @@ function shuffle(arr) {
   return a;
 }
 
-export default function GameMode({ onExit, onPlayAgain }) {
+export default function GameMode({ onExit, onPlayAgain, showGlobe, onToggleGlobe }) {
   const [difficulty, setDifficulty]       = useState(null);
   const [queue]                           = useState(() => shuffle(GAME_CITIES).slice(0, TOTAL_ROUNDS));
   const [round, setRound]                 = useState(0);
@@ -300,6 +300,17 @@ export default function GameMode({ onExit, onPlayAgain }) {
           ))}
           <span className="game-round-label">Round {round + 1}/{TOTAL_ROUNDS}</span>
         </div>
+        <button
+          className={`game-globe-toggle ${showGlobe ? 'active' : ''}`}
+          type="button"
+          onClick={onToggleGlobe}
+          title={showGlobe ? 'Hide Globe' : 'Show Globe'}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </button>
         <div className="game-scores">
           <div className="game-score-item">
             <span className="game-score-label">Round</span>
