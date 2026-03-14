@@ -91,13 +91,15 @@ const DIFFICULTY_CONFIG = {
   },
 };
 
-function getHintValue(key, city) {
+function getHintValue(key, city, guessTarget) {
   switch (key) {
     case 'continent': return city.continent;
     case 'country':   return city.country;
     case 'pop':       return city.pop;
     case 'coords':    return `${city.lat >= 0 ? 'Northern' : 'Southern'} · ${city.lon >= 0 ? 'Eastern' : 'Western'} Hemisphere`;
-    case 'letter':    return `Starts with "${city.name[0]}"`;
+    case 'letter':    return guessTarget === 'country'
+      ? `The country starts with "${city.country[0]}"`
+      : `Starts with "${city.name[0]}"`;
     default:          return '';
   }
 }
@@ -417,9 +419,11 @@ export default function GameMode({ onExit, onPlayAgain, showGlobe, onToggleGlobe
                   onClick={() => handleHint(h.key)}
                   disabled={used || status !== 'guessing'}
                 >
-                  <span className="hint-label-name">{h.label}</span>
+                  <span className="hint-label-name">
+                    {h.key === 'letter' && config.guessTarget === 'country' ? "Country's First Letter" : h.label}
+                  </span>
                   {used
-                    ? <span className="hint-revealed">{getHintValue(h.key, city)}</span>
+                    ? <span className="hint-revealed">{getHintValue(h.key, city, config.guessTarget)}</span>
                     : <span className="hint-cost">−{h.cost} pts</span>
                   }
                 </button>
