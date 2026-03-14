@@ -504,6 +504,7 @@ const Globe = forwardRef(function Globe(
         globeRef={globeRef}
         cameraRef={cameraRef}
         mountRef={mountRef}
+        mountSizeRef={mountSizeRef}
         selectedLocation={selectedLocation}
         cityLabels={cityLabels}
       />
@@ -512,7 +513,7 @@ const Globe = forwardRef(function Globe(
 });
 
 // ── HTML labels for selected city + ticker (max ~6, no perf concern) ──
-function CityLabels({ globeRef, cameraRef, mountRef, selectedLocation, cityLabels }) {
+function CityLabels({ globeRef, cameraRef, mountRef, mountSizeRef, selectedLocation, cityLabels }) {
   useEffect(() => {
     if (!selectedLocation) return;
     const globe  = globeRef.current;
