@@ -204,7 +204,10 @@ export default function GameMode({ onExit, onPlayAgain, showGlobe, onToggleGlobe
 
   function handleNext() {
     if (round + 1 >= TOTAL_ROUNDS) setStatus('gameover');
-    else setRound(r => r + 1);
+    else {
+      setStatus('guessing');
+      setRound(r => r + 1);
+    }
   }
 
   // ── Difficulty picker ──────────────────────────────────────────────
