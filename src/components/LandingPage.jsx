@@ -80,7 +80,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
   return (
     <div className="landing">
       {/* ── Navbar ──────────────────────────────────────────── */}
-      <nav className="landing-nav">
+      <nav className="landing-nav" aria-label="Main navigation">
         <div className="landing-nav-left">
           <svg className="landing-logo-icon" width="28" height="28" viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="10" stroke="#3b82f6" strokeWidth="1.5"/>
@@ -93,10 +93,10 @@ export default function LandingPage({ onExplore, onStartGame }) {
         </div>
 
         <div className="landing-nav-links">
-          <a href="#" className="landing-nav-link" onClick={onExplore}>Globe</a>
-          <a href="#" className="landing-nav-link">Forecast</a>
-          <a href="#" className="landing-nav-link">Radar Maps</a>
-          <a href="#" className="landing-nav-link">Climate Insights</a>
+          <a href="#globe" className="landing-nav-link" onClick={onExplore}>Globe</a>
+          <a href="#forecast" className="landing-nav-link">Forecast</a>
+          <a href="#radar-maps" className="landing-nav-link">Radar Maps</a>
+          <a href="#climate-insights" className="landing-nav-link">Climate Insights</a>
         </div>
 
         <div className="landing-nav-right">
@@ -111,7 +111,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
       </nav>
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="landing-hero">
+      <section id="globe" className="landing-hero">
         <div className="hero-globe-wrap">
           {/* Floating weather cards */}
           <div className="weather-card weather-card--tokyo">
@@ -149,7 +149,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
             <img
               className="hero-globe-img"
               src="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-              alt="Earth globe"
+              alt="Interactive 3D Earth globe showing real-time global weather data"
               fetchPriority="high"
               loading="eager"
               decoding="sync"
@@ -177,7 +177,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
       </section>
 
       {/* ── Advanced Forecasting ──────────────────────────────── */}
-      <section className="landing-features">
+      <section id="forecast" className="landing-features">
         <div className="features-inner">
           <h2 className="section-title">Advanced Forecasting</h2>
           <p className="section-sub">Visualizing complex atmospheric data into stunning interactive experiences.</p>
@@ -227,7 +227,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
       </section>
 
       {/* ── Game Info ─────────────────────────────────────────── */}
-      <section className="landing-game">
+      <section id="climate-insights" className="landing-game">
         <div className="game-inner">
           <p className="game-label">Game Mode</p>
           <h2 className="section-title">Challenge Your Weather IQ</h2>
@@ -266,7 +266,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
       </section>
 
       {/* ── Regional Deep-Dive ────────────────────────────────── */}
-      <section className="landing-regional">
+      <section id="radar-maps" className="landing-regional">
         <div className="regional-inner">
           <h2 className="section-title">Regional Deep-Dive</h2>
           <div className="city-cards">
@@ -278,7 +278,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
                 <img
                   className="city-card-img"
                   src={city.img}
-                  alt={city.name}
+                  alt={`${city.name} weather – ${city.condition}, ${city.temp}`}
                   loading="lazy"
                   fetchpriority="low"
                   decoding="async"
@@ -311,10 +311,10 @@ export default function LandingPage({ onExplore, onStartGame }) {
             <span>Weather Globe</span>
           </div>
           <div className="footer-links">
-            <a href="#" className="footer-link">Privacy Policy</a>
-            <a href="#" className="footer-link">Terms of Service</a>
-            <a href="#" className="footer-link">API Access</a>
-            <a href="#" className="footer-link">Contact</a>
+            <a href="/privacy" className="footer-link">Privacy Policy</a>
+            <a href="/terms" className="footer-link">Terms of Service</a>
+            <a href="/api" className="footer-link">API Access</a>
+            <a href="/contact" className="footer-link">Contact</a>
           </div>
           <div className="footer-copy">© 2026 Weather Globe. Satellite Imagery by GlobaNet.</div>
         </div>
