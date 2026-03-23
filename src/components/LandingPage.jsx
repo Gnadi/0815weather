@@ -106,7 +106,6 @@ export default function LandingPage({ onExplore, onStartGame }) {
             </svg>
             <input className="landing-search-input" placeholder="Search city..." readOnly />
           </div>
-          <button className="landing-signin">Sign In</button>
         </div>
       </nav>
 
@@ -171,7 +170,7 @@ export default function LandingPage({ onExplore, onStartGame }) {
           </p>
           <div className="hero-ctas">
             <button className="btn-primary" onClick={onExplore} onMouseEnter={() => import('./Globe')}>Explore the Globe</button>
-            <button className="btn-ghost">Watch Video Tour</button>
+            <a className="btn-ghost" href="https://github.com/Gnadi/0815weather" target="_blank" rel="noopener noreferrer">View on GitHub</a>
           </div>
         </div>
       </section>
