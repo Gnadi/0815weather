@@ -5,25 +5,25 @@ const CITY_CARDS = [
     name: 'Tokyo',
     condition: 'Clear Sky',
     temp: '24°C',
-    img: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80&fm=webp',
+    img: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf',
   },
   {
     name: 'New York',
     condition: 'Cloudy',
     temp: '18°C',
-    img: 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?w=400&q=80&fm=webp',
+    img: 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee',
   },
   {
     name: 'London',
     condition: 'Raining',
     temp: '15°C',
-    img: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400&q=80&fm=webp',
+    img: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad',
   },
   {
     name: 'Dubai',
     condition: 'Sunny',
     temp: '34°C',
-    img: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400&q=80&fm=webp',
+    img: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c',
   },
 ];
 
@@ -145,16 +145,25 @@ export default function LandingPage({ onExplore, onStartGame }) {
 
           {/* Globe visual */}
           <div className="hero-globe">
-            <img
-              className="hero-globe-img"
-              src="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-              alt="Interactive 3D Earth globe showing real-time global weather data"
-              fetchPriority="high"
-              loading="eager"
-              decoding="sync"
-              width="380"
-              height="380"
-            />
+            <picture>
+              <source
+                type="image/webp"
+                srcSet="https://wsrv.nl/?url=unpkg.com/three-globe/example/img/earth-blue-marble.jpg&w=220&output=webp&q=75 220w,
+                        https://wsrv.nl/?url=unpkg.com/three-globe/example/img/earth-blue-marble.jpg&w=300&output=webp&q=80 300w,
+                        https://wsrv.nl/?url=unpkg.com/three-globe/example/img/earth-blue-marble.jpg&w=500&output=webp&q=85 500w"
+                sizes="(max-width: 480px) 220px, (max-width: 768px) 260px, 380px"
+              />
+              <img
+                className="hero-globe-img"
+                src="https://wsrv.nl/?url=unpkg.com/three-globe/example/img/earth-blue-marble.jpg&w=500&q=82"
+                alt="Interactive 3D Earth globe showing real-time global weather data"
+                fetchPriority="high"
+                loading="eager"
+                decoding="sync"
+                width="380"
+                height="380"
+              />
+            </picture>
           </div>
         </div>
 
@@ -276,10 +285,12 @@ export default function LandingPage({ onExplore, onStartGame }) {
               >
                 <img
                   className="city-card-img"
-                  src={city.img}
+                  srcSet={`${city.img}?w=220&q=70&fm=webp 220w, ${city.img}?w=400&q=80&fm=webp 400w`}
+                  sizes="(max-width: 768px) calc(50vw - 24px), 400px"
+                  src={`${city.img}?w=400&q=80&fm=webp`}
                   alt={`${city.name} weather – ${city.condition}, ${city.temp}`}
                   loading="lazy"
-                  fetchpriority="low"
+                  fetchPriority="low"
                   decoding="async"
                   width="400"
                   height="220"

@@ -44,9 +44,14 @@
     <!-- ── PWA manifest ──────────────────────────────────────────── -->
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- ── LCP image preload ─────────────────────────────────────── -->
-    <link rel="preconnect" href="https://unpkg.com" crossorigin />
-    <link rel="preload" as="image" href="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg" fetchpriority="high" />
+    <!-- ── LCP image preload (responsive WebP via wsrv.nl proxy) ── -->
+    <link rel="preconnect" href="https://wsrv.nl" crossorigin />
+    <link rel="preload" as="image"
+          imagesrcset="https://wsrv.nl/?url=unpkg.com/three-globe/example/img/earth-blue-marble.jpg&amp;w=220&amp;output=webp&amp;q=75 220w,
+                       https://wsrv.nl/?url=unpkg.com/three-globe/example/img/earth-blue-marble.jpg&amp;w=300&amp;output=webp&amp;q=80 300w,
+                       https://wsrv.nl/?url=unpkg.com/three-globe/example/img/earth-blue-marble.jpg&amp;w=500&amp;output=webp&amp;q=85 500w"
+          imagesizes="(max-width: 480px) 220px, (max-width: 768px) 260px, 380px"
+          fetchpriority="high" />
 
     <!-- ── DNS prefetch & preconnect ─────────────────────────────── -->
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
